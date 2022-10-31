@@ -290,13 +290,13 @@ module top;
 	
 	function bit verify_parity(bit [9:0] word);
 		static bit parity_bit = 0;
-		for (int i = 0 ; i < 9 ; i++)
+		for (int i = 1 ; i < 10 ; i++)
 		begin 
 			if (word[i] == 1)
 				parity_bit = !parity_bit;
 		end
 		
-		return (parity_bit == word[9]);
+		return (parity_bit == word[0]);
 		
 	endfunction
 		
