@@ -54,9 +54,6 @@ module top;
 		COLOR_BLUE_ON_WHITE,
 		COLOR_DEFAULT
 	} print_color_t;
-	
-//Serializer_word - args: (clk, input word, dout) - 10 bit long word, MSB first, DATA = 0bbbbbbbbp,  CONTROL = 1bbbbbbbbp
-//Deserializer_word - args (clk, din, output word bin, )
 
 //------------------------------------------------------------------------------
 // Local variables
@@ -71,7 +68,9 @@ module top;
 
 	bit           [7:0]  A;
 	bit           [7:0]  B;
-	bit           [7:0]  status;
+	bit           [7:0] status;
+	bit 		  [7:0] data_msb;
+	bit			  [7:0] data_lsb;
 	wire          [7:0]  op;
 
 // Add all of the required arguments here
@@ -134,19 +133,21 @@ module top;
 
 	initial begin : tester
 		reset_alu();
-		repeat (100) begin : tester_main_blk
+		repeat (1) begin : tester_main_blk
 			@(negedge clk);
-			op_set = get_op();
-			A      = get_data();
-			B      = get_data();
-			// here paste function for serializer
-			enable_n  = 1'b0;
+			op_set = CMD_ADD;
+			A      = 8'b11111111;
+			B      = 8'b11111111;
+			serializer(A,DATA);
+			serializer(B,DATA);
+			serializer(CMD_ADD,CONTROL);
+			@(negedge clk);
+			enable_n  = 1'b1;
 			case (op_set) // handle the start signal
 				default: begin : case_default_blk
 					
-					// here paste function for deserializer
-					@(negedge clk);
-					enable_n  = 1'b1;
+					deserializer(status,data_msb,data_lsb);
+
 
 					//------------------------------------------------------------------------------
 					// temporary data check - scoreboard will do the job later
@@ -204,22 +205,23 @@ module top;
 	task serializer(input bit [7:0] data, payload_type_t payload_bit);
 		
 		bit [9:0] word;
-		static bit parity_bit = 0;
+		bit parity_bit = 0;
 		
 		assign word = {payload_bit, data, parity_bit};
-			
-		for (int i = 0 ; i < 9 ; i++)
+		
+		for (int i = 1 ; i < 10 ; i++)
 		begin 
 			if (word[i] == 1)
 				parity_bit = !parity_bit;
 		end
-			
+		
 		for (int i = 0 ; i < 10 ; i++)
 		begin
-			@(negedge clk) din <= word[i];
-			`ifdef DEBUG
-				$display("Serializer sent %d", word[9-i]);
-			`endif
+			@(negedge clk);
+			din = word[9-i]; 
+			enable_n  = 1'b0;
+			$display("Serializer word[%d] = %d", i, din);
+
 		end
 		
 	endtask 
@@ -240,25 +242,39 @@ module top;
 		
 		bit [9:0] status_word, data_msb_word, data_lsb_word;
 		static bit parity_bit_check = 0;
+		wait(dout_valid);
+		
+		for (int i = 0 ; i < 10 ; i++) //change to while probably, if idont get dout_valid i'll skip bits
+		begin
+			@(negedge clk);
+			status_word[9-i] = dout; //this does not assign correctly, even though dout is cool
+			$display("Deserializer status_word[%d]: %x", i, dout);
+			
+		end
+		//assert(verify_parity(status_word) == 1);
+		//assert(status_word[9] == 1); //verify if i have correct msb lsb by checking command bit 
+		status = status_word[8:1];
+		
 		
 		for (int i = 0 ; i < 10 ; i++)
-			@(posedge dout_valid) status_word[9-i] <= dout;
-		assert(verify_parity(status_word) == 1);
-		assert(status_word[9] == 1); //verify if i have correct msb lsb by checking command bit 
-		status <= status_word[8:1];
-		
-		
-		for (int i = 0 ; i < 10 ; i++)
-			@(posedge dout_valid) data_msb_word[9-i] <= dout;
-		assert(verify_parity(data_msb_word) == 1);
-		assert(data_msb_word[9] == 0);
-		data_msb <= data_msb_word[8:1];
+		begin
+			@(negedge clk);
+			if(dout_valid) data_msb_word[9-i] = dout; //this does not assign correctly, even though dout is cool
+			$display("Deserializer data msb[%d]: %x", i, dout);
+		end
+		//assert(verify_parity(data_msb_word) == 1);
+		//assert(data_msb_word[9] == 0);
+		data_msb = data_msb_word[8:1];
 		
 		for (int i = 0 ; i < 10 ; i++)
-			@(posedge dout_valid) data_lsb_word[9-i] <= dout;
-		assert(verify_parity(data_lsb_word) == 1);
-		assert(data_lsb_word[9] == 0);
-		data_lsb <= data_lsb_word[8:1];
+		begin
+			@(negedge clk); 
+			if(dout_valid) data_lsb_word[9-i] = dout; //this does not assign correctly, even though dout is cool
+			$display("Deserializer data lsb[%d]: %x", i, dout);
+		end
+		//assert(verify_parity(data_lsb_word) == 1);
+		//assert(data_lsb_word[9] == 0);
+		data_lsb = data_lsb_word[8:1];
 			
 		
 		begin
