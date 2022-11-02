@@ -18,7 +18,6 @@
  and check the data on the correct clock edge (covergroup on posedge
  and scoreboard on negedge). Scoreboard and coverage removed.
  */
-`define DEBUG
 
 module top;
 
