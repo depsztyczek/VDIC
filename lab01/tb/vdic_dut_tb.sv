@@ -19,7 +19,7 @@
  and scoreboard on negedge). Scoreboard and coverage removed.
  */
 `define DEBUG
- 
+
 module top;
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ module top;
 		S_NO_ERROR = 8'b00000000,
 		S_INVALID_COMMAND = 8'b10000000
 	} status_t;
-	
+
 	typedef enum bit {
 		CONTROL = 1'b1,
 		DATA = 1'b0
@@ -69,14 +69,16 @@ module top;
 	bit           [7:0]  A;
 	bit           [7:0]  B;
 	bit           [7:0] status;
-	bit 		  [7:0] data_msb;
-	bit			  [7:0] data_lsb;
+	bit           [7:0] data_msb;
+	bit           [7:0] data_lsb;
+	bit           [15:0] data_result;
 	wire          [7:0]  op;
 
 // Add all of the required arguments here
 
 	operation_t          op_set;
 	assign op = op_set;
+	assign data_result = {data_msb, data_lsb};
 
 	test_result_t        test_result = TEST_PASSED;
 
@@ -105,14 +107,13 @@ module top;
 // Random data generation functions
 
 	function operation_t get_op();
-		bit [7:0] op_choice;
-		op_choice = 8'($random);
+		bit  op_choice;
+		op_choice = 1'($random);
 		case (op_choice)
-			8'b00010000 : return CMD_ADD;
-			8'b00000001 : return CMD_AND;
+			1'b0 : return CMD_ADD;
+			1'b1 : return CMD_AND;
 		endcase // case (op_choice)
 	endfunction : get_op
-
 //---------------------------------
 	function byte get_data();
 
@@ -133,34 +134,33 @@ module top;
 
 	initial begin : tester
 		reset_alu();
-		repeat (1) begin : tester_main_blk
+		repeat (5) begin : tester_main_blk
 			@(negedge clk);
-			op_set = CMD_ADD;
-			A      = 8'b11111111;
-			B      = 8'b11111111;
+			op_set = get_op();
+			A      = get_data();
+			B      = get_data();
 			serializer(A,DATA);
 			serializer(B,DATA);
-			serializer(CMD_ADD,CONTROL);
+			serializer(op_set,CONTROL);
 			@(negedge clk);
 			enable_n  = 1'b1;
 			case (op_set) // handle the start signal
 				default: begin : case_default_blk
-					
-					deserializer(status,data_msb,data_lsb);
 
+					deserializer();
 
 					//------------------------------------------------------------------------------
 					// temporary data check - scoreboard will do the job later
 					begin
 						automatic bit [15:0] expected = get_expected(A, B, op_set);
-						assert(expected === expected) begin //FIX THIS assert BACK WHEN IMPLEMENTED
+						assert(data_result === expected) begin
 						`ifdef DEBUG
 							$display("Test passed for A=%0d B=%0d op_set=%0d", A, B, op);
 						`endif
 						end
 						else begin
 							$display("Test FAILED for A=%0d B=%0d op_set=%0d", A, B, op);
-							$display("Expected: %d  received: %d", expected, expected);//FIX THIS assert BACK WHEN IMPLEMENTED
+							$display("Expected: %d  received: %d", expected, data_result);
 							test_result = TEST_FAILED;
 						end;
 					end
@@ -189,117 +189,92 @@ module top;
 	endtask : reset_alu
 
 //------------------------------------------------------------------------------
-// serializer task - sends a 10bit word
-// DATA = 0bbbbbbbbp
-// where:
-// - b = 0 or 1, PAYLOAD bit, total 8 bits, MSB first
-// - p = 0 or 1, even parity bit for the 9 bits (total number of 1's in the
-// 10-bits should be even)
-//
-// CONTROL = 1bbbbbbbbp
-// where:
-// - b = 0 or 1, COMMAND bit, total 8 bits, MSB first
-// - p = 0 or 1, even parity bit for the 9 bits (total number of 1's in the
-// 10-bits should be even)
+// serializer task
 //------------------------------------------------------------------------------
+
 	task serializer(input bit [7:0] data, payload_type_t payload_bit);
-		
+
 		bit [9:0] word;
 		bit parity_bit = 0;
-		
+
 		assign word = {payload_bit, data, parity_bit};
-		
+
 		for (int i = 1 ; i < 10 ; i++)
-		begin 
+		begin
 			if (word[i] == 1)
 				parity_bit = !parity_bit;
 		end
-		
+
 		for (int i = 0 ; i < 10 ; i++)
 		begin
 			@(negedge clk);
-			din = word[9-i]; 
+			din = word[9-i];
 			enable_n  = 1'b0;
-			$display("Serializer word[%d] = %d", i, din);
-
 		end
-		
-	endtask 
+
+	endtask
 
 //------------------------------------------------------------------------------
 // deserializer task
 //------------------------------------------------------------------------------
-//The DUT responds to each CONTROL word, sending 3 WORDS:
-// STATUS, DATA, DATA
-//
-// STATUS = 1bbbbbbbbp
-// where bbbbbbbb is one of:
-// 
-//  DATA is defined as in the input.
-// PAYLOAD of the DATA is 00000000 if the data was NOT processed correctly.
 
-	task deserializer(output bit [7:0] status, output bit [7:0] data_msb, output bit [7:0] data_lsb);
-		
+	task deserializer();
+
 		bit [9:0] status_word, data_msb_word, data_lsb_word;
-		static bit parity_bit_check = 0;
+		
+		assign status = status_word[8:1];
+		assign data_msb = data_msb_word[8:1];
+		assign data_lsb = data_lsb_word[8:1];
+
 		wait(dout_valid);
-		
-		for (int i = 0 ; i < 10 ; i++) //change to while probably, if idont get dout_valid i'll skip bits
+
+		for (int i = 0 ; i < 10 ; i++) 
 		begin
 			@(negedge clk);
-			status_word[9-i] = dout; //this does not assign correctly, even though dout is cool
-			$display("Deserializer status_word[%d]: %x", i, dout);
-			
+			status_word[9-i] = dout;
 		end
-		//assert(verify_parity(status_word) == 1);
-		//assert(status_word[9] == 1); //verify if i have correct msb lsb by checking command bit 
-		status = status_word[8:1];
-		
-		
+		assert(verify_parity(status_word) == 1);
+
+
 		for (int i = 0 ; i < 10 ; i++)
 		begin
 			@(negedge clk);
-			if(dout_valid) data_msb_word[9-i] = dout; //this does not assign correctly, even though dout is cool
-			$display("Deserializer data msb[%d]: %x", i, dout);
+			data_msb_word[9-i] = dout;
 		end
-		//assert(verify_parity(data_msb_word) == 1);
-		//assert(data_msb_word[9] == 0);
-		data_msb = data_msb_word[8:1];
-		
+		assert(verify_parity(data_msb_word) == 1);
+
 		for (int i = 0 ; i < 10 ; i++)
 		begin
-			@(negedge clk); 
-			if(dout_valid) data_lsb_word[9-i] = dout; //this does not assign correctly, even though dout is cool
-			$display("Deserializer data lsb[%d]: %x", i, dout);
+			@(negedge clk);
+			data_lsb_word[9-i] = dout;
 		end
-		//assert(verify_parity(data_lsb_word) == 1);
-		//assert(data_lsb_word[9] == 0);
-		data_lsb = data_lsb_word[8:1];
-			
-		
+		assert(verify_parity(data_lsb_word) == 1);
+
+
 		begin
 			`ifdef DEBUG
-				$display("Deserializer received:");
-				$display("Status: %h", status);
-				$display("Data MSB: %h", data_msb);
-				$display("Data LSB: %h", data_lsb);
+			$display("Deserializer received:");
+			$display("Status: %b", status_word);
+			$display("Data MSB: %b", data_msb_word);
+			$display("Data LSB: %b", data_lsb_word);
+			$display("Data is %h", data_result);
 			`endif
 		end
-		
-	endtask 
-	
+
+	endtask
+
 	function bit verify_parity(bit [9:0] word);
-		static bit parity_bit = 0;
+		automatic bit parity_bit = 0;
 		for (int i = 1 ; i < 10 ; i++)
-		begin 
+		begin
 			if (word[i] == 1)
 				parity_bit = !parity_bit;
 		end
-		
+
 		return (parity_bit == word[0]);
-		
-	endfunction
-		
+
+	endfunction : verify_parity
+
 //------------------------------------------------------------------------------
 // calculate expected result
 //------------------------------------------------------------------------------
@@ -322,6 +297,9 @@ module top;
 				return -1;
 			end
 		endcase
+		`ifdef DEBUG
+			$display("Get expected says we should have data result = %d",ret);
+		`endif
 		return(ret);
 	endfunction : get_expected
 
