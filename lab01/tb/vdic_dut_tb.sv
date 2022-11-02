@@ -194,15 +194,11 @@ module top;
 	task serializer(input bit [7:0] data, payload_type_t payload_bit);
 
 		bit [9:0] word;
-		bit parity_bit = 0;
+		static bit parity_bit = 0;
 
 		assign word = {payload_bit, data, parity_bit};
 
-		for (int i = 1 ; i < 10 ; i++)
-		begin
-			if (word[i] == 1)
-				parity_bit = !parity_bit;
-		end
+		parity_bit = calculate_parity(word);
 
 		for (int i = 0 ; i < 10 ; i++)
 		begin
@@ -232,7 +228,7 @@ module top;
 			@(negedge clk);
 			status_word[9-i] = dout;
 		end
-		assert(verify_parity(status_word) == 1);
+		assert(calculate_parity(status_word) == status_word[0]);
 
 
 		for (int i = 0 ; i < 10 ; i++)
@@ -240,14 +236,14 @@ module top;
 			@(negedge clk);
 			data_msb_word[9-i] = dout;
 		end
-		assert(verify_parity(data_msb_word) == 1);
+		assert(calculate_parity(data_msb_word) == data_msb_word[0]);
 
 		for (int i = 0 ; i < 10 ; i++)
 		begin
 			@(negedge clk);
 			data_lsb_word[9-i] = dout;
 		end
-		assert(verify_parity(data_lsb_word) == 1);
+		assert(calculate_parity(data_lsb_word) == data_lsb_word[0]);
 
 
 		begin
@@ -262,7 +258,7 @@ module top;
 
 	endtask
 
-	function bit verify_parity(bit [9:0] word);
+	function bit calculate_parity(bit [9:0] word);
 		automatic bit parity_bit = 0;
 		for (int i = 1 ; i < 10 ; i++)
 		begin
@@ -270,9 +266,9 @@ module top;
 				parity_bit = !parity_bit;
 		end
 
-		return (parity_bit == word[0]);
+		return parity_bit;
 
-	endfunction : verify_parity
+	endfunction : calculate_parity
 
 //------------------------------------------------------------------------------
 // calculate expected result
