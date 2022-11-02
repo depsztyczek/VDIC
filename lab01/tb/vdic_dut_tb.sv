@@ -153,6 +153,7 @@ module top;
 					begin
 						automatic bit [15:0] expected = get_expected(A, B, op_set);
 						assert(data_result === expected) begin
+							assert(status == S_NO_ERROR);
 						`ifdef DEBUG
 							$display("Test passed for A=%0d B=%0d op_set=%0d", A, B, op);
 						`endif
