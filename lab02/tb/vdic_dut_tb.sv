@@ -329,19 +329,55 @@ covergroup zeros_or_ones_on_ops;
         bins B2_all_ops_FF          = binsof (all_ops) &&
         (binsof (a_leg.ones) || binsof (b_leg.ones));
 	 
+        ignore_bins others_only =
+        binsof(a_leg.others) && binsof(b_leg.others);
+    }
+    
+
+
+endgroup
+
+// Covergroup checking for regular values
+covergroup regular_values_on_ops;
+
+    option.name = "cg_regular_values_on_ops";
+
+    all_ops: coverpoint op_set {
+	    bins add_op = {CMD_ADD};
+        bins and_op = {CMD_AND};
+    }
+    
+    a_leg: coverpoint A {
+        bins others= {['h00:'hFF]};
+    }
+
+    b_leg: coverpoint B {
+        bins others= {['h00:'hFF]};
+    }
+
+    B_op_00_FF: cross a_leg, b_leg, all_ops {
+
+        // #B1 simulate random values for ops
+
+        bins B1_all_ops_regular          = binsof (all_ops) &&
+        (binsof (a_leg.others) || binsof (b_leg.others));
+	 
 
     }
 
 endgroup
 
 zeros_or_ones_on_ops        c_00_FF;
+regular_values_on_ops		c_regular;
 
 initial begin : coverage
     c_00_FF = new();
+	c_regular = new();
     forever begin : sample_cov
         @(posedge clk);
         if(!enable_n || !rst_n) begin
             c_00_FF.sample();
+	        c_regular.sample();
         end
     end
 end : coverage
