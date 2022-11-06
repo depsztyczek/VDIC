@@ -45,6 +45,11 @@ module top;
 		TEST_PASSED,
 		TEST_FAILED
 	} test_result_t;
+	
+	typedef enum bit {
+		TEST_DONE,
+		TEST_IN_PROGRESS
+	} test_progress_t;
 
 	typedef enum {
 		COLOR_BOLD_BLACK_ON_GREEN,
@@ -81,6 +86,7 @@ module top;
 	assign data_result = {data_msb, data_lsb};
 
 	test_result_t        test_result = TEST_PASSED;
+	test_progress_t		 test_progress = TEST_IN_PROGRESS;
 
 //------------------------------------------------------------------------------
 // DUT instantiation
@@ -134,8 +140,9 @@ module top;
 
 	initial begin : tester
 		reset_alu();
-		repeat (100) begin : tester_main_blk
+		repeat (1000) begin : tester_main_blk
 			@(negedge clk);
+			test_progress = TEST_IN_PROGRESS;
 			op_set = get_op();
 			A      = get_data();
 			B      = get_data();
@@ -144,27 +151,11 @@ module top;
 			serializer(op_set,CONTROL);
 			@(negedge clk);
 			enable_n  = 1'b1;
-			case (op_set) // handle the start signal
+			case (op_set) 
 				default: begin : case_default_blk
 
 					deserializer();
-
-					//------------------------------------------------------------------------------
-					// temporary data check - scoreboard will do the job later
-					begin
-						automatic bit [15:0] expected = get_expected(A, B, op_set);
-						assert(data_result === expected) begin
-							assert(status == S_NO_ERROR);
-						`ifdef DEBUG
-							$display("Test passed for A=%0d B=%0d op_set=%0d", A, B, op);
-						`endif
-						end
-						else begin
-							$display("Test FAILED for A=%0d B=%0d op_set=%0d", A, B, op);
-							$display("Expected: %d  received: %d", expected, data_result);
-							test_result = TEST_FAILED;
-						end;
-					end
+					test_progress = TEST_DONE;
 
 				end : case_default_blk
 			endcase // case (op_set)
@@ -301,12 +292,6 @@ module top;
 	endfunction : get_expected
 
 //------------------------------------------------------------------------------
-// Temporary. The scoreboard will be later used for checking the data
-	final begin : finish_of_the_test
-		print_test_result(test_result);
-	end
-	
-//------------------------------------------------------------------------------
 // Coverage block
 //------------------------------------------------------------------------------
 
@@ -332,7 +317,8 @@ covergroup zeros_or_ones_on_ops;
     option.name = "cg_zeros_or_ones_on_ops";
 
     all_ops: coverpoint op_set {
-        ignore_bins null_ops = {CMD_NOP};
+	    bins add_op = {CMD_ADD};
+        bins and_op = {CMD_AND};
     }
     
     a_leg: coverpoint A {
@@ -351,22 +337,15 @@ covergroup zeros_or_ones_on_ops;
 
         // #B1 simulate all zero input for all the operations
 
-        bins B1_add_00          = binsof (all_ops) intersect {CMD_ADD} &&
-        (binsof (a_leg.zeros) || binsof (b_leg.zeros));
-
-        bins B1_and_00          = binsof (all_ops) intersect {CMD_AND} &&
+        bins B1_all_ops_00          = binsof (all_ops) &&
         (binsof (a_leg.zeros) || binsof (b_leg.zeros));
 
         // #B2 simulate all one input for all the operations
 
-        bins B2_add_FF          = binsof (all_ops) intersect {CMD_ADD} &&
+        bins B2_all_ops_FF          = binsof (all_ops) &&
         (binsof (a_leg.ones) || binsof (b_leg.ones));
+	 
 
-        bins B2_and_FF          = binsof (all_ops) intersect {CMD_AND} &&
-        (binsof (a_leg.ones) || binsof (b_leg.ones));
-
-        ignore_bins others_only =
-        binsof(a_leg.others) && binsof(b_leg.others);
     }
 
 endgroup
@@ -390,10 +369,9 @@ end : coverage
 // Scoreboard - demo
 //------------------------------------------------------------------------------
 always @(negedge clk) begin : scoreboard
-    if(dout_valid) begin:verify_result //check if dout valid here works
-        shortint predicted_result;
+    if(test_progress == TEST_DONE) begin:verify_result 
 
-        predicted_result = get_expected(A, B, op_set);
+        automatic bit [15:0] predicted_result = get_expected(A, B, op_set);
 
         CHK_RESULT: assert(data_result === predicted_result) begin
            `ifdef DEBUG
@@ -401,12 +379,19 @@ always @(negedge clk) begin : scoreboard
            `endif
         end
         else begin
+	        test_result <= TEST_FAILED;
+	        print_test_result(test_result);
             $error("%0t Test FAILED for A=%0d B=%0d op_set=%0d\nExpected: %d  received: %d",
                 $time, A, B, op_set , predicted_result, data_result);
         end;
-
+        test_progress <= TEST_IN_PROGRESS; 
     end
 end : scoreboard
+
+final begin : finish_of_the_test
+    print_test_result(test_result);
+end
+
 //------------------------------------------------------------------------------
 // Other functions
 //------------------------------------------------------------------------------
