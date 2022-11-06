@@ -295,22 +295,6 @@ module top;
 // Coverage block
 //------------------------------------------------------------------------------
 
-// Covergroup checking the op codes and their sequences
-covergroup op_cov;
-
-    option.name = "cg_op_cov";
-
-    coverpoint op_set {
-        // #A1 test all operations
-        bins A1_single_cycle[] = {CMD_ADD, CMD_AND};
-
-        // #A2 two operations in a row
-        bins A2_twoops[]       = ([CMD_ADD:CMD_AND] [* 2]);
-
-    }
-
-endgroup
-
 // Covergroup checking for min and max arguments of the ALU
 covergroup zeros_or_ones_on_ops;
 
@@ -350,16 +334,13 @@ covergroup zeros_or_ones_on_ops;
 
 endgroup
 
-op_cov                      oc;
 zeros_or_ones_on_ops        c_00_FF;
 
 initial begin : coverage
-    oc      = new();
     c_00_FF = new();
     forever begin : sample_cov
         @(posedge clk);
         if(!enable_n || !rst_n) begin
-            oc.sample();
             c_00_FF.sample();
         end
     end
