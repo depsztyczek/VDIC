@@ -113,11 +113,13 @@ module top;
 // Random data generation functions
 
 	function operation_t get_op();
-		bit  op_choice;
+		bit [1:0] op_choice;
 		op_choice = 1'($random);
 		case (op_choice)
-			1'b0 : return CMD_ADD;
-			1'b1 : return CMD_AND;
+			2'b01 : return CMD_ADD;
+			2'b10 : return CMD_AND;
+			2'b10 : return 8'($random);
+			2'b11 : return 8'($random);
 		endcase // case (op_choice)
 	endfunction : get_op
 //---------------------------------
@@ -280,9 +282,10 @@ module top;
 			CMD_AND : ret    = A & B;
 			CMD_ADD : ret    = A + B;
 			default: begin
-				$display("%0t INTERNAL ERROR. get_expected: unexpected case argument: %s", $time, op_set);
-				test_result = TEST_FAILED;
-				return -1;
+				`ifdef DEBUG
+					$display("Randomized operation was %d",op_set);
+				`endif
+				ret = 8'b00000000;
 			end
 		endcase
 		`ifdef DEBUG
@@ -290,6 +293,29 @@ module top;
 		`endif
 		return(ret);
 	endfunction : get_expected
+	
+	function logic [15:0] get_expected_status(
+			operation_t op_set
+		);
+		bit [15:0] ret;
+	`ifdef DEBUG
+		$display("%0t DEBUG: get_expected(%0d,%0d,%0d)",$time, A, B, op_set);
+	`endif
+		case(op_set)
+			CMD_AND : ret    = S_NO_ERROR;
+			CMD_ADD : ret    = S_NO_ERROR;
+			default: begin
+				`ifdef DEBUG
+					$display("Randomized operation was %d", op_set);
+				`endif
+				ret = S_INVALID_COMMAND;
+			end
+		endcase
+		`ifdef DEBUG
+			$display("Get expected says we should have data result = %d",ret);
+		`endif
+		return(ret);
+	endfunction : get_expected_status
 
 //------------------------------------------------------------------------------
 // Coverage block
@@ -300,7 +326,7 @@ covergroup zeros_or_ones_on_ops;
 
     option.name = "cg_zeros_or_ones_on_ops";
 
-    all_ops: coverpoint op_set {
+    valid_ops: coverpoint op_set {
 	    bins add_op = {CMD_ADD};
         bins and_op = {CMD_AND};
     }
@@ -317,67 +343,52 @@ covergroup zeros_or_ones_on_ops;
         bins ones  = {'hFF};
     }
 
-    B_op_00_FF: cross a_leg, b_leg, all_ops {
+    B_op_00_FF: cross a_leg, b_leg, valid_ops {
 
-        // #B1 simulate all zero input for all the operations
+        // Simulate all zero/ones input for all the valid operations.
 
-        bins B1_all_ops_00          = binsof (all_ops) &&
-        (binsof (a_leg.zeros) || binsof (b_leg.zeros));
-
-        // #B2 simulate all one input for all the operations
-
-        bins B2_all_ops_FF          = binsof (all_ops) &&
-        (binsof (a_leg.ones) || binsof (b_leg.ones));
+        bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+        bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+        bins B3_add_op_FF          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+        bins B4_and_op_FF          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.ones) || binsof (b_leg.ones));
 	 
-        ignore_bins others_only =
-        binsof(a_leg.others) && binsof(b_leg.others);
+        ignore_bins others_only = binsof(a_leg.others) && binsof(b_leg.others);
+    }
+    
+    B_op_regular: cross a_leg, b_leg, valid_ops {
+
+        // Simulate regular input on operations 
+
+        bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.others) || binsof (b_leg.others));
+        bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.others) || binsof (b_leg.others));
     }
     
 
 
 endgroup
 
-// Covergroup checking for regular values
-covergroup regular_values_on_ops;
+// Covergroup checking for irregular operations.
+covergroup irregular_ops;
 
-    option.name = "cg_regular_values_on_ops";
+    option.name = "cg_irregular_ops";
 
-    all_ops: coverpoint op_set {
-	    bins add_op = {CMD_ADD};
-        bins and_op = {CMD_AND};
-    }
-    
-    a_leg: coverpoint A {
-        bins others= {['h00:'hFF]};
-    }
-
-    b_leg: coverpoint B {
-        bins others= {['h00:'hFF]};
-    }
-
-    B_op_00_FF: cross a_leg, b_leg, all_ops {
-
-        // #B1 simulate random values for ops
-
-        bins B1_all_ops_regular          = binsof (all_ops) &&
-        (binsof (a_leg.others) || binsof (b_leg.others));
-	 
-
+    invalid_ops: coverpoint op_set {
+	    ignore_bins add_op = {CMD_ADD,CMD_AND};
     }
 
 endgroup
 
 zeros_or_ones_on_ops        c_00_FF;
-regular_values_on_ops		c_regular;
+irregular_ops		c_irregular_ops;
 
 initial begin : coverage
     c_00_FF = new();
-	c_regular = new();
+	c_irregular_ops = new();
     forever begin : sample_cov
         @(posedge enable_n);
 	    begin
             c_00_FF.sample();
-	        c_regular.sample();
+	        c_irregular_ops.sample();
         end
     end
 end : coverage
@@ -389,8 +400,9 @@ always @(negedge clk) begin : scoreboard
     if(test_progress == TEST_DONE) begin:verify_result 
 
         automatic bit [15:0] predicted_result = get_expected(A, B, op_set);
+	    automatic bit [7:0] predicted_status = get_expected_status(op_set);
 
-        CHK_RESULT: assert(data_result === predicted_result) begin
+        CHK_RESULT: assert((data_result === predicted_result) && (status === predicted_status)) begin
            `ifdef DEBUG
             $display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, A, B, op);
            `endif
@@ -401,7 +413,7 @@ always @(negedge clk) begin : scoreboard
             $error("%0t Test FAILED for A=%0d B=%0d op_set=%0d\nExpected: %d  received: %d",
                 $time, A, B, op_set , predicted_result, data_result);
         end;
-        test_progress <= TEST_IN_PROGRESS; 
+        test_progress = TEST_IN_PROGRESS; // Ignore the dvt warning, we know better.
     end
 end : scoreboard
 
