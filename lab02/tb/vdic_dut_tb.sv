@@ -374,8 +374,8 @@ initial begin : coverage
     c_00_FF = new();
 	c_regular = new();
     forever begin : sample_cov
-        @(posedge clk);
-        if(!enable_n || !rst_n) begin
+        @(posedge enable_n);
+	    begin
             c_00_FF.sample();
 	        c_regular.sample();
         end
