@@ -45,7 +45,7 @@ module top;
 		TEST_PASSED,
 		TEST_FAILED
 	} test_result_t;
-	
+
 	typedef enum bit {
 		TEST_DONE,
 		TEST_IN_PROGRESS
@@ -86,7 +86,7 @@ module top;
 	assign data_result = {data_msb, data_lsb};
 
 	test_result_t        test_result = TEST_PASSED;
-	test_progress_t		 test_progress = TEST_IN_PROGRESS;
+	test_progress_t      test_progress = TEST_IN_PROGRESS;
 
 //------------------------------------------------------------------------------
 // DUT instantiation
@@ -153,7 +153,7 @@ module top;
 			serializer(op_set,CONTROL);
 			@(negedge clk);
 			enable_n  = 1'b1;
-			case (op_set) 
+			case (op_set)
 				default: begin : case_default_blk
 
 					deserializer();
@@ -211,14 +211,14 @@ module top;
 	task deserializer();
 
 		bit [9:0] status_word, data_msb_word, data_lsb_word;
-		
+
 		assign status = status_word[8:1];
 		assign data_msb = data_msb_word[8:1];
 		assign data_lsb = data_lsb_word[8:1];
 
 		wait(dout_valid);
 
-		for (int i = 0 ; i < 10 ; i++) 
+		for (int i = 0 ; i < 10 ; i++)
 		begin
 			@(negedge clk);
 			status_word[9-i] = dout;
@@ -283,17 +283,17 @@ module top;
 			CMD_ADD : ret    = A + B;
 			default: begin
 				`ifdef DEBUG
-					$display("Randomized operation was %d",op_set);
+				$display("Randomized operation was %d",op_set);
 				`endif
 				ret = 8'b00000000;
 			end
 		endcase
 		`ifdef DEBUG
-			$display("Get expected says we should have data result = %d",ret);
+		$display("Get expected says we should have data result = %d",ret);
 		`endif
 		return(ret);
 	endfunction : get_expected
-	
+
 	function logic [15:0] get_expected_status(
 			operation_t op_set
 		);
@@ -306,13 +306,13 @@ module top;
 			CMD_ADD : ret    = S_NO_ERROR;
 			default: begin
 				`ifdef DEBUG
-					$display("Randomized operation was %d", op_set);
+				$display("Randomized operation was %d", op_set);
 				`endif
 				ret = S_INVALID_COMMAND;
 			end
 		endcase
 		`ifdef DEBUG
-			$display("Get expected says we should have data result = %d",ret);
+		$display("Get expected says we should have data result = %d",ret);
 		`endif
 		return(ret);
 	endfunction : get_expected_status
@@ -322,104 +322,104 @@ module top;
 //------------------------------------------------------------------------------
 
 // Covergroup checking for min and max arguments of the ALU
-covergroup zeros_or_ones_on_ops;
+	covergroup zeros_or_ones_on_ops;
 
-    option.name = "cg_zeros_or_ones_on_ops";
+		option.name = "cg_zeros_or_ones_on_ops";
 
-    valid_ops: coverpoint op_set {
-	    bins add_op = {CMD_ADD};
-        bins and_op = {CMD_AND};
-    }
-    
-    a_leg: coverpoint A {
-        bins zeros = {'h00};
-        bins others= {['h01:'hFE]};
-        bins ones  = {'hFF};
-    }
+		valid_ops: coverpoint op_set {
+			bins add_op = {CMD_ADD};
+			bins and_op = {CMD_AND};
+		}
 
-    b_leg: coverpoint B {
-        bins zeros = {'h00};
-        bins others= {['h01:'hFE]};
-        bins ones  = {'hFF};
-    }
+		a_leg: coverpoint A {
+			bins zeros = {'h00};
+			bins others= {['h01:'hFE]};
+			bins ones  = {'hFF};
+		}
 
-    B_op_00_FF: cross a_leg, b_leg, valid_ops {
+		b_leg: coverpoint B {
+			bins zeros = {'h00};
+			bins others= {['h01:'hFE]};
+			bins ones  = {'hFF};
+		}
 
-        // Simulate all zero/ones input for all the valid operations.
+		B_op_00_FF: cross a_leg, b_leg, valid_ops {
 
-        bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
-        bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
-        bins B3_add_op_FF          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.ones) || binsof (b_leg.ones));
-        bins B4_and_op_FF          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.ones) || binsof (b_leg.ones));
-	 
-        ignore_bins others_only = binsof(a_leg.others) && binsof(b_leg.others);
-    }
-    
-    B_op_regular: cross a_leg, b_leg, valid_ops {
+			// Simulate all zero/ones input for all the valid operations.
 
-        // Simulate regular input on operations 
+			bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B3_add_op_FF          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+			bins B4_and_op_FF          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.ones) || binsof (b_leg.ones));
 
-        bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.others) || binsof (b_leg.others));
-        bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.others) || binsof (b_leg.others));
-    }
-    
+			ignore_bins others_only = binsof(a_leg.others) && binsof(b_leg.others);
+		}
+
+		B_op_regular: cross a_leg, b_leg, valid_ops {
+
+			// Simulate regular input on operations
+
+			bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.others) || binsof (b_leg.others));
+			bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.others) || binsof (b_leg.others));
+		}
 
 
-endgroup
+
+	endgroup
 
 // Covergroup checking for irregular operations.
-covergroup irregular_ops;
+	covergroup irregular_ops;
 
-    option.name = "cg_irregular_ops";
+		option.name = "cg_irregular_ops";
 
-    invalid_ops: coverpoint op_set {
-	    ignore_bins add_op = {CMD_ADD,CMD_AND};
-    }
+		invalid_ops: coverpoint op_set {
+			ignore_bins add_op = {CMD_ADD,CMD_AND};
+		}
 
-endgroup
+	endgroup
 
-zeros_or_ones_on_ops        c_00_FF;
-irregular_ops		c_irregular_ops;
+	zeros_or_ones_on_ops        c_00_FF;
+	irregular_ops       c_irregular_ops;
 
-initial begin : coverage
-    c_00_FF = new();
-	c_irregular_ops = new();
-    forever begin : sample_cov
-        @(posedge enable_n);
-	    begin
-            c_00_FF.sample();
-	        c_irregular_ops.sample();
-        end
-    end
-end : coverage
+	initial begin : coverage
+		c_00_FF = new();
+		c_irregular_ops = new();
+		forever begin : sample_cov
+			@(posedge enable_n);
+			begin
+				c_00_FF.sample();
+				c_irregular_ops.sample();
+			end
+		end
+	end : coverage
 
 //------------------------------------------------------------------------------
 // Scoreboard - demo
 //------------------------------------------------------------------------------
-always @(negedge clk) begin : scoreboard
-    if(test_progress == TEST_DONE) begin:verify_result 
+	always @(negedge clk) begin : scoreboard
+		if(test_progress == TEST_DONE) begin:verify_result
 
-        automatic bit [15:0] predicted_result = get_expected(A, B, op_set);
-	    automatic bit [7:0] predicted_status = get_expected_status(op_set);
+			automatic bit [15:0] predicted_result = get_expected(A, B, op_set);
+			automatic bit [7:0] predicted_status = get_expected_status(op_set);
 
-        CHK_RESULT: assert((data_result === predicted_result) && (status === predicted_status)) begin
-           `ifdef DEBUG
-            $display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, A, B, op);
-           `endif
-        end
-        else begin
-	        test_result <= TEST_FAILED;
-	        print_test_result(test_result);
-            $error("%0t Test FAILED for A=%0d B=%0d op_set=%0d\nExpected: %d  received: %d",
-                $time, A, B, op_set , predicted_result, data_result);
-        end;
-        test_progress = TEST_IN_PROGRESS; // Ignore the dvt warning, we know better.
-    end
-end : scoreboard
+			CHK_RESULT: assert((data_result === predicted_result) && (status === predicted_status)) begin
+		   `ifdef DEBUG
+				$display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, A, B, op);
+		   `endif
+			end
+			else begin
+				test_result <= TEST_FAILED;
+				print_test_result(test_result);
+				$error("%0t Test FAILED for A=%0d B=%0d op_set=%0d\nExpected: %d  received: %d",
+					$time, A, B, op_set , predicted_result, data_result);
+			end;
+			test_progress = TEST_IN_PROGRESS; // Ignore the dvt warning, we know better.
+		end
+	end : scoreboard
 
-final begin : finish_of_the_test
-    print_test_result(test_result);
-end
+	final begin : finish_of_the_test
+		print_test_result(test_result);
+	end
 
 //------------------------------------------------------------------------------
 // Other functions
