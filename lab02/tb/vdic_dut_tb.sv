@@ -24,10 +24,14 @@ module top;
 //------------------------------------------------------------------------------
 // Type definitions
 //------------------------------------------------------------------------------
-
 	typedef enum bit[7:0] {
 		S_NO_ERROR = 8'b00000000,
-		S_INVALID_COMMAND = 8'b10000000
+		S_MISSING_DATA = 8'b10000000,
+		S_DATA_STACK_OVERFLOW = 8'b00000010,
+		S_OUTPUT_FIFO_OVERFLOW = 8'b00000100,
+		S_DATA_PARITY_ERROR = 8'b00100000,
+		S_COMMAND_PARITY_ERROR = 8'b01000000,
+		S_INVALID_COMMAND = 8'b10000000	
 	} status_t;
 
 	typedef enum bit {
@@ -36,9 +40,12 @@ module top;
 	} payload_type_t;
 
 	typedef enum bit[7:0] {
-		CMD_ADD = 8'b00010000,
+		CMD_NOP = 8'b00000000,
 		CMD_AND = 8'b00000001,
-		CMD_NOP = 8'b00000000
+		CMD_OR = 8'b00000010,
+		CMD_XOR = 8'b00000011,
+		CMD_ADD = 8'b00010000,
+		CMD_SUB = 8'b00100000
 	} operation_t;
 
 	typedef enum bit {
@@ -113,25 +120,29 @@ module top;
 // Random data generation functions
 
 	function operation_t get_op();
-		bit [1:0] op_choice;
+		bit [2:0] op_choice;
 		op_choice = 1'($random);
 		case (op_choice)
-			2'b01 : return CMD_ADD;
-			2'b10 : return CMD_AND;
-			2'b10 : return 8'($random);
-			2'b11 : return 8'($random);
+			2'b000 : return CMD_NOP;
+			2'b001 : return CMD_AND;
+			2'b010 : return CMD_OR;
+			2'b011 : return CMD_XOR;
+			2'b100 : return CMD_ADD;
+			2'b101 : return CMD_SUB;
+			2'b110 : return 8'($random);
+			2'b111 : return 8'($random);
 		endcase // case (op_choice)
 	endfunction : get_op
 //---------------------------------
 	function byte get_data();
 
-		bit [1:0] zero_ones;
+		bit [1:0] data_choice;
 
-		zero_ones = 2'($random);
+		data_choice = 2'($random);
 
-		if (zero_ones == 2'b00)
+		if (data_choice == 2'b00)
 			return 8'h00;
-		else if (zero_ones == 2'b11)
+		else if (data_choice == 2'b11)
 			return 8'hFF;
 		else
 			return 8'($random);
@@ -281,11 +292,15 @@ module top;
 		case(op_set)
 			CMD_AND : ret    = A & B;
 			CMD_ADD : ret    = A + B;
+			CMD_XOR : ret    = A ^ B;
+			CMD_NOP : ret    = 16'h0000;
+			CMD_OR  : ret    = A | B;
+			CMD_SUB : ret    = A - B;
 			default: begin
 				`ifdef DEBUG
 				$display("Randomized operation was %d",op_set);
 				`endif
-				ret = 8'b00000000;
+				ret = 16'h0000;
 			end
 		endcase
 		`ifdef DEBUG
@@ -294,16 +309,20 @@ module top;
 		return(ret);
 	endfunction : get_expected
 
-	function logic [15:0] get_expected_status(
+	function logic [7:0] get_expected_status(
 			operation_t op_set
 		);
-		bit [15:0] ret;
+		bit [7:0] ret;
 	`ifdef DEBUG
 		$display("%0t DEBUG: get_expected(%0d,%0d,%0d)",$time, A, B, op_set);
 	`endif
 		case(op_set)
 			CMD_AND : ret    = S_NO_ERROR;
 			CMD_ADD : ret    = S_NO_ERROR;
+			CMD_XOR : ret    = S_NO_ERROR;
+			CMD_NOP : ret    = S_NO_ERROR;
+			CMD_OR  : ret    = S_NO_ERROR;
+			CMD_SUB : ret    = S_NO_ERROR;
 			default: begin
 				`ifdef DEBUG
 				$display("Randomized operation was %d", op_set);
