@@ -13,9 +13,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
- 
-package tinyalu_pkg;
-	
+
+package alu_pkg;
+
 	typedef enum bit[7:0] {
 		S_NO_ERROR = 8'b00000000,
 		S_MISSING_DATA = 8'b00000001,
@@ -23,9 +23,9 @@ package tinyalu_pkg;
 		S_OUTPUT_FIFO_OVERFLOW = 8'b00000100,
 		S_DATA_PARITY_ERROR = 8'b00100000,
 		S_COMMAND_PARITY_ERROR = 8'b01000000,
-		S_INVALID_COMMAND = 8'b10000000	
+		S_INVALID_COMMAND = 8'b10000000
 	} status_t;
-	
+
 	typedef enum bit[7:0] {
 		CMD_NOP = 8'b00000000,
 		CMD_AND = 8'b00000001,
@@ -34,15 +34,15 @@ package tinyalu_pkg;
 		CMD_ADD = 8'b00010000,
 		CMD_SUB = 8'b00100000
 	} operation_t;
-	
+
 	typedef enum bit {
 		TEST_DONE,
 		TEST_IN_PROGRESS
 	} test_progress_t;
-	
+
 	typedef enum bit {
 		CONTROL = 1'b1,
 		DATA = 1'b0
 	} payload_type_t;
 
-endpackage : tinyalu_pkg
+endpackage : alu_pkg

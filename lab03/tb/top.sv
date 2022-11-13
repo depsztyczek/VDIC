@@ -14,7 +14,7 @@
  limitations under the License.
  */
 module top;
-tinyalu_bfm bfm();
+alu_bfm bfm();
 tester tester_i (bfm);
 coverage coverage_i (bfm);
 scoreboard scoreboard_i(bfm);

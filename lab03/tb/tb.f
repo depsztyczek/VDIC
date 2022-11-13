@@ -1,6 +1,6 @@
 -F ../../rtl/rtl.f
-tinyalu_pkg.sv
-tinyalu_bfm.sv
+alu_pkg.sv
+alu_bfm.sv
 tester.sv
 coverage.sv
 scoreboard.sv
