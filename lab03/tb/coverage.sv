@@ -16,15 +16,11 @@
 module coverage(tinyalu_bfm bfm);
 import tinyalu_pkg::*;
 
-bit           [7:0]  A;
-bit           [7:0]  B;
-operation_t          op_set;
-
 covergroup zeros_or_ones_on_ops;
 
 	option.name = "cg_zeros_or_ones_on_ops";
 
-	valid_ops: coverpoint op_set {
+	valid_ops: coverpoint bfm.op {
 		bins add_op = {CMD_ADD};
 		bins and_op = {CMD_AND};
 		bins or_op = {CMD_OR};
@@ -33,13 +29,13 @@ covergroup zeros_or_ones_on_ops;
 		bins sub_op = {CMD_SUB};
 	}
 
-	a_leg: coverpoint A {
+	a_leg: coverpoint bfm.A {
 		bins zeros = {'h00};
 		bins others= {['h01:'hFE]};
 		bins ones  = {'hFF};
 	}
 
-	b_leg: coverpoint B {
+	b_leg: coverpoint bfm.B {
 		bins zeros = {'h00};
 		bins others= {['h01:'hFE]};
 		bins ones  = {'hFF};
@@ -87,7 +83,7 @@ covergroup irregular_ops;
 
 	option.name = "cg_irregular_ops";
 
-	invalid_ops: coverpoint op_set { //this might have to be "op"
+	invalid_ops: coverpoint bfm.op {
 		ignore_bins valid_ops = {CMD_ADD,CMD_AND,CMD_NOP,CMD_XOR,CMD_OR,CMD_SUB};
 	}
 
