@@ -26,7 +26,7 @@ module top;
 //------------------------------------------------------------------------------
 	typedef enum bit[7:0] {
 		S_NO_ERROR = 8'b00000000,
-		S_MISSING_DATA = 8'b10000000,
+		S_MISSING_DATA = 8'b00000001,
 		S_DATA_STACK_OVERFLOW = 8'b00000010,
 		S_OUTPUT_FIFO_OVERFLOW = 8'b00000100,
 		S_DATA_PARITY_ERROR = 8'b00100000,
@@ -123,14 +123,14 @@ module top;
 		bit [2:0] op_choice;
 		op_choice = 1'($random);
 		case (op_choice)
-			2'b000 : return CMD_NOP;
-			2'b001 : return CMD_AND;
-			2'b010 : return CMD_OR;
-			2'b011 : return CMD_XOR;
-			2'b100 : return CMD_ADD;
-			2'b101 : return CMD_SUB;
-			2'b110 : return 8'($random);
-			2'b111 : return 8'($random);
+			3'b000 : return CMD_NOP;
+			3'b001 : return CMD_AND;
+			3'b010 : return CMD_OR;
+			3'b011 : return CMD_XOR;
+			3'b100 : return CMD_ADD;
+			3'b101 : return CMD_SUB;
+			3'b110 : return 8'($random);
+			3'b111 : return 8'($random);
 		endcase // case (op_choice)
 	endfunction : get_op
 //---------------------------------
