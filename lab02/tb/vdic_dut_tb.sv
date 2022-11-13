@@ -121,7 +121,7 @@ module top;
 
 	function operation_t get_op();
 		bit [2:0] op_choice;
-		op_choice = 1'($random);
+		op_choice = 3'($random);
 		case (op_choice)
 			3'b000 : return CMD_NOP;
 			3'b001 : return CMD_AND;
@@ -345,9 +345,13 @@ module top;
 
 		option.name = "cg_zeros_or_ones_on_ops";
 
-		valid_ops: coverpoint op_set {
+		valid_ops: coverpoint op {
 			bins add_op = {CMD_ADD};
 			bins and_op = {CMD_AND};
+			bins or_op = {CMD_OR};
+			bins xor_op = {CMD_XOR};
+			bins nop_op = {CMD_NOP};
+			bins sub_op = {CMD_SUB};
 		}
 
 		a_leg: coverpoint A {
@@ -404,8 +408,8 @@ module top;
 
 		option.name = "cg_irregular_ops";
 
-		invalid_ops: coverpoint op_set {
-			ignore_bins add_op = {CMD_ADD,CMD_AND,CMD_NOP,CMD_XOR,CMD_OR,CMD_SUB};
+		invalid_ops: coverpoint op {
+			ignore_bins valid_ops = {CMD_ADD,CMD_AND,CMD_NOP,CMD_XOR,CMD_OR,CMD_SUB};
 		}
 
 	endgroup
