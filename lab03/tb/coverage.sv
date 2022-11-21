@@ -82,6 +82,7 @@ module coverage(alu_bfm bfm);
 	covergroup irregular_ops;
 
 		option.name = "cg_irregular_ops";
+		option.auto_bin_max = 10;
 
 		invalid_ops: coverpoint bfm.op {
 			ignore_bins valid_ops = {CMD_ADD,CMD_AND,CMD_NOP,CMD_XOR,CMD_OR,CMD_SUB};

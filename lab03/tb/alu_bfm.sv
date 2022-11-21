@@ -20,7 +20,7 @@ interface alu_bfm;
 	bit                  rst_n;
 	bit                  enable_n;
 	bit                  din;
-	bit                  dout;
+	logic                dout;
 	bit                  dout_valid;
 
 
