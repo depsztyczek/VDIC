@@ -14,11 +14,11 @@
  limitations under the License.
  */
 virtual class shape;
-   protected int height=-1;
-   protected int width=-1;
+   protected real height=-1;
+   protected real width=-1;
    protected string name = "0";
 
-   function new(int h, int w, string n); 
+   function new(real h, real w, string n); 
 	   height = h;
 	   width = w;
 	   name = n;
@@ -28,7 +28,7 @@ virtual class shape;
 	   return name;
   	endfunction : get_name
 
-   pure virtual function int get_area();
+   pure virtual function real get_area();
   // I know instructions said it should be virtual but this made more sense to me
    function void print();
 	   $display ("Shape type is %s, height = %g, width = %g, area = %g", get_name(), height, width, get_area());
@@ -39,11 +39,11 @@ endclass : shape
 
 class rectangle extends shape;
 	
-   function new(int h, int w);
+   function new(real h, real w);
       super.new(h, w, "Rectangle");
    endfunction : new
 
-   function int get_area();
+   function real get_area();
       return height*width;
    endfunction : get_area
       
@@ -51,11 +51,11 @@ endclass : rectangle
 
 class square extends shape;
 	
-   function new(int h);
+   function new(real h);
       super.new(h, h, "Square");
    endfunction : new
 
-   function int get_area();
+   function real get_area();
       return height*width;
    endfunction : get_area
       
@@ -63,11 +63,11 @@ endclass : square
 
 class triangle extends shape;
 	
-   function new(int h, int a);
+   function new(real h, real a);
       super.new(h, a, "Triangle");
    endfunction : new
 
-   function int get_area();
+   function real get_area();
       return (height*width)/2;
    endfunction : get_area
       
@@ -77,7 +77,7 @@ endclass : triangle
 class shape_factory;
 
    static function shape make_shape(string shape_type, 
-                                      int height, int width);
+                                      real height, real width);
       rectangle rectangle_h;
       triangle triangle_h;
 	  square square_h;
@@ -113,14 +113,14 @@ class shape_reporter #(type T=shape);
 
    protected static T shape_storage[$];
 
-   static function void put_shape_in_box(T l);
+   static function void store_shape(T l);
       shape_storage.push_back(l);
-   endfunction : put_shape_in_box
+   endfunction : store_shape
 
    static function void report_shapes();
       $display("Shapes in box:"); 
       foreach (shape_storage[i])
-        $display(shape_storage[i].get_name());
+        shape_storage[i].print();
    endfunction : report_shapes
 
 endclass : shape_reporter
@@ -130,21 +130,21 @@ module top;
 
 
    initial begin
-      shape shape_h;
-      rectangle   rectangle_h;
-      triangle  triangle_h;
-	  square square_h;
+	  shape_factory factory;
+      shape_reporter reporter;
 	   
-	   string line;
-      int file;
+	  string shape_type;
+      real h, w;
+	  int file;
 	   
-      file = $fopen("./lab04part1_example_factory.sv", "r");
-	  while(!$feof(file))begin
-		  $fgets(line, file);
-		  $display("Line is %s", line);
+      file = $fopen("../lab04part1_shapes.txt", "r");
+	  while($fscanf(file, "%s %g %g", shape_type, h, w) == 3)begin
+		  reporter.store_shape(factory.make_shape(shape_type, h, w));
 	  end
 	  
 	  $fclose(file);
+	  
+	  reporter.report_shapes();
 
    end
 
