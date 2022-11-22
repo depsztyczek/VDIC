@@ -45,9 +45,24 @@ package alu_pkg;
 		DATA = 1'b0
 	} payload_type_t;
 	
+	typedef enum bit {
+		TEST_PASSED,
+		TEST_FAILED
+	} test_result_t;
+	
+	typedef enum {
+		COLOR_BOLD_BLACK_ON_GREEN,
+		COLOR_BOLD_BLACK_ON_RED,
+		COLOR_BOLD_BLACK_ON_YELLOW,
+		COLOR_BOLD_BLUE_ON_WHITE,
+		COLOR_BLUE_ON_WHITE,
+		COLOR_DEFAULT
+	} print_color_t;
+
 `include "coverage.svh"
 `include "tester.svh"
 `include "scoreboard.svh"
 `include "testbench.svh"
-endpackage : tinyalu_pkg
+
+endpackage : alu_pkg
    

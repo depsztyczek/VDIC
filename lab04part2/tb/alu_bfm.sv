@@ -14,7 +14,8 @@
  limitations under the License.
  */
 interface alu_bfm;
-	import alu_pkg::*;
+import alu_pkg::*;
+
 
 	bit                  clk;
 	bit                  rst_n;
@@ -36,10 +37,6 @@ interface alu_bfm;
 
 	assign op = op_set;
 	assign data_result = {data_msb, data_lsb};
-
-
-
-	modport tlm (import reset_alu, serializer, deserializer, calculate_parity);
 
 //------------------------------------------------------------------------------
 // clock generator
