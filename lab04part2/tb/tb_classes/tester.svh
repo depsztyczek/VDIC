@@ -56,7 +56,7 @@ class tester;
 
     task execute();
 		bfm.reset_alu();
-		repeat (3) begin : tester_main_blk
+		repeat (1000) begin : tester_main_blk
 			@(negedge bfm.clk);
 			bfm.test_progress = TEST_IN_PROGRESS;
 			bfm.op_set = get_op();

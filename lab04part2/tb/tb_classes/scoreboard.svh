@@ -122,13 +122,14 @@ class scoreboard;
 	    
         forever begin : self_checker
 
-        	@(negedge bfm.clk);  //copied without always 
-			if(bfm.test_progress == TEST_DONE) begin:verify_result
+        	while (bfm.test_progress === TEST_IN_PROGRESS) @(negedge bfm.clk);
+			if(bfm.test_progress === TEST_DONE) begin:verify_result
 	
 				predicted_result = get_expected(bfm.A, bfm.B, bfm.op_set);
 				predicted_status = get_expected_status(bfm.op_set);
 	
 				CHK_RESULT: assert((bfm.data_result === predicted_result) && (bfm.status === predicted_status)) begin
+					print_test_result(test_result);
 		   `ifdef DEBUG
 					$display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, bfm.A, bfm.B, bfm.op);
 		   `endif
@@ -144,7 +145,7 @@ class scoreboard;
 		end
             
     endtask : execute
-
+	
 endclass : scoreboard
 
 
