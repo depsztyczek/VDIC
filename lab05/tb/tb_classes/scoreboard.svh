@@ -13,20 +13,19 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-class scoreboard;
-
+class scoreboard extends uvm_component;
+	`uvm_component_utils(scoreboard)
+	
 //------------------------------------------------------------------------------
 // local variables
 //------------------------------------------------------------------------------
-    virtual alu_bfm bfm;
-	test_result_t   test_result = TEST_PASSED;
-	logic [15:0] predicted_result;
-	logic [7:0] predicted_status;
+    protected virtual alu_bfm bfm;
+	protected test_result_t test_result = TEST_PASSED;
 //------------------------------------------------------------------------------
 // constructor
 //------------------------------------------------------------------------------
-    function new (virtual alu_bfm b);
-        bfm = b;
+    function new (string name, uvm_component parent);
+        super.new(name, parent);
     endfunction : new
 
 //------------------------------------------------------------------------------
@@ -117,34 +116,53 @@ class scoreboard;
 		end
 	endfunction
 
+//------------------------------------------------------------------------------
+// build phase
+//------------------------------------------------------------------------------
+    function void build_phase(uvm_phase phase);
+        if(!uvm_config_db #(virtual alu_bfm)::get(null, "*","bfm", bfm))
+            $fatal(1,"Failed to get BFM");
+    endfunction : build_phase
 
-    task execute();
+//------------------------------------------------------------------------------
+// run phase
+//------------------------------------------------------------------------------
+    task run_phase(uvm_phase phase);
+	    
+		logic [15:0] predicted_result;
+		logic [7:0] predicted_status;
 	    
         forever begin : self_checker
+            @(negedge bfm.clk)
+                if(bfm.done) begin : check_data
 
-        	while (bfm.test_progress === TEST_IN_PROGRESS) @(negedge bfm.clk);
-			if(bfm.test_progress === TEST_DONE) begin:verify_result
-	
-				predicted_result = get_expected(bfm.A, bfm.B, bfm.op_set);
-				predicted_status = get_expected_status(bfm.op_set);
-	
-				CHK_RESULT: assert((bfm.data_result === predicted_result) && (bfm.status === predicted_status)) begin
-					print_test_result(test_result);
-		   `ifdef DEBUG
-					$display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, bfm.A, bfm.B, bfm.op);
-		   `endif
-		   		end
-			end
-			else begin
-				test_result = TEST_FAILED;
-				print_test_result(test_result);
-				$error("%0t Test FAILED for A=%0d B=%0d op_set=%0d\nExpected: %d  received: %d",
-					$time, bfm.A, bfm.B, bfm.op_set, predicted_result, bfm.data_result);
-			end;
-			bfm.test_progress = TEST_IN_PROGRESS; // Ignore the dvt warning, we know better.
-		end
-            
-    endtask : execute
+					predicted_result = get_expected(bfm.A, bfm.B, bfm.op_set);
+					predicted_status = get_expected_status(bfm.op_set);
+					// deleted if from here, maybe begin end will break
+                        SCOREBOARD_CHECK:
+                        assert((bfm.data_result === predicted_result) && (bfm.status === predicted_status)) begin
+                            `ifdef DEBUG
+                            $display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, bfm.A, bfm.B, bfm.op);
+                            `endif
+                        end
+                        else begin
+                            $error ("FAILED: A: %0h  B: %0h  op: %s result: %0h",
+                                bfm.A, bfm.B, bfm.op_set.name(), bfm.result);
+                            test_result = TEST_FAILED;
+                        end
+                end : check_data
+        end : self_checker
+    endtask : run_phase
+
+//------------------------------------------------------------------------------
+// report phase
+//------------------------------------------------------------------------------
+    function void report_phase(uvm_phase phase);
+        super.report_phase(phase);
+        print_test_result(test_result);
+    endfunction : report_phase
+
+endclass : scoreboard
 	
 endclass : scoreboard
 
