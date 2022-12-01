@@ -63,15 +63,42 @@ package alu_pkg;
 	} print_color_t;
 
 //------------------------------------------------------------------------------
+// package functions
+//------------------------------------------------------------------------------
+
+	function void set_print_color ( print_color_t c );
+		string ctl;
+		case(c)
+			COLOR_BOLD_BLACK_ON_GREEN : ctl  = "\033\[1;30m\033\[102m";
+			COLOR_BOLD_BLACK_ON_RED : ctl    = "\033\[1;30m\033\[101m";
+			COLOR_BOLD_BLACK_ON_YELLOW : ctl = "\033\[1;30m\033\[103m";
+			COLOR_BOLD_BLUE_ON_WHITE : ctl   = "\033\[1;34m\033\[107m";
+			COLOR_BLUE_ON_WHITE : ctl        = "\033\[0;34m\033\[107m";
+			COLOR_DEFAULT : ctl              = "\033\[0m\n";
+			default : begin
+				$error("set_print_color: bad argument");
+				ctl                          = "";
+			end
+		endcase
+		$write(ctl);
+	endfunction
+	
+//------------------------------------------------------------------------------
 // testbench classes
 //------------------------------------------------------------------------------
 `include "coverage.svh"
-`include "tester.svh"
 `include "scoreboard.svh"
-`include "testbench.svh"
+`include "base_tester.svh"
+`include "random_tester.svh"
+`include "corner_tester.svh"
+`include "add_tester.svh"
+`include "env.svh"
 //------------------------------------------------------------------------------
 // test classes
 //------------------------------------------------------------------------------
+`include "random_test.svh"
+`include "add_test.svh"
+`include "corner_test.svh"
 
 endpackage : alu_pkg
    

@@ -116,7 +116,7 @@ class coverage extends uvm_component;
 //------------------------------------------------------------------------------
     task run_phase(uvm_phase phase);
         forever begin : sampling_block
-            @(negedge bfm.clk); //in execute i used @(posedge bfm.enable_n);
+            @(posedge bfm.enable_n); //in execute i used @(posedge bfm.enable_n);
             A      = bfm.A;
             B      = bfm.B;
             op_set = bfm.op_set;

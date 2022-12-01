@@ -79,23 +79,6 @@ class scoreboard extends uvm_component;
 		return(ret);
 
 	endfunction : get_expected_status
-	
-	function void set_print_color ( print_color_t c );
-		string ctl;
-		case(c)
-			COLOR_BOLD_BLACK_ON_GREEN : ctl  = "\033\[1;30m\033\[102m";
-			COLOR_BOLD_BLACK_ON_RED : ctl    = "\033\[1;30m\033\[101m";
-			COLOR_BOLD_BLACK_ON_YELLOW : ctl = "\033\[1;30m\033\[103m";
-			COLOR_BOLD_BLUE_ON_WHITE : ctl   = "\033\[1;34m\033\[107m";
-			COLOR_BLUE_ON_WHITE : ctl        = "\033\[0;34m\033\[107m";
-			COLOR_DEFAULT : ctl              = "\033\[0m\n";
-			default : begin
-				$error("set_print_color: bad argument");
-				ctl                          = "";
-			end
-		endcase
-		$write(ctl);
-	endfunction
 
 	function void print_test_result (test_result_t r);
 		if(r == TEST_PASSED) begin
@@ -135,7 +118,7 @@ class scoreboard extends uvm_component;
         forever begin : self_checker
             @(negedge bfm.clk)
                 if(bfm.done) begin : check_data
-
+	                bfm.deserializer();
 					predicted_result = get_expected(bfm.A, bfm.B, bfm.op_set);
 					predicted_status = get_expected_status(bfm.op_set);
 					// deleted if from here, maybe begin end will break
@@ -147,7 +130,7 @@ class scoreboard extends uvm_component;
                         end
                         else begin
                             $error ("FAILED: A: %0h  B: %0h  op: %s result: %0h",
-                                bfm.A, bfm.B, bfm.op_set.name(), bfm.result);
+                                bfm.A, bfm.B, bfm.op_set.name(), bfm.data_result);
                             test_result = TEST_FAILED;
                         end
                 end : check_data
@@ -163,8 +146,7 @@ class scoreboard extends uvm_component;
     endfunction : report_phase
 
 endclass : scoreboard
-	
-endclass : scoreboard
+
 
 
 

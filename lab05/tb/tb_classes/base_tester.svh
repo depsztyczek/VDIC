@@ -64,6 +64,8 @@ virtual class base_tester extends uvm_component;
 			bfm.serializer(iA,DATA);
 			bfm.serializer(iB,DATA);
 			bfm.serializer(op_set,CONTROL);
+			@(negedge bfm.clk);
+			bfm.enable_n  = 1'b1;
         end : random_loop
 
 //      #500;
