@@ -48,22 +48,18 @@ virtual class base_tester extends uvm_component;
 // run phase
 //------------------------------------------------------------------------------
     task run_phase(uvm_phase phase);
-        byte unsigned iA;
-        byte unsigned iB;
-        operation_t op_set;
-        shortint result;
 
         phase.raise_objection(this);
 
         bfm.reset_alu();
 
         repeat (1000) begin : random_loop
-            op_set = get_op();
-            iA     = get_data();
-            iB     = get_data();
-			bfm.serializer(iA,DATA);
-			bfm.serializer(iB,DATA);
-			bfm.serializer(op_set,CONTROL);
+            bfm.op_set = get_op();
+            bfm.A     = get_data();
+            bfm.B     = get_data();
+			bfm.serializer(bfm.A,DATA);
+			bfm.serializer(bfm.B,DATA);
+			bfm.serializer(bfm.op_set,CONTROL);
 			@(negedge bfm.clk);
 			bfm.enable_n  = 1'b1;
         end : random_loop
