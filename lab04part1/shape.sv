@@ -49,15 +49,11 @@ class rectangle extends shape;
 
 endclass : rectangle
 
-class square extends shape;
+class square extends rectangle;
 
 	function new(real h);
 		super.new(h, h, "Square");
 	endfunction : new
-
-	function real get_area();
-		return height*width;
-	endfunction : get_area
 
 endclass : square
 
