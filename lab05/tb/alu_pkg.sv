@@ -16,6 +16,9 @@
 `timescale 1ns/1ps
 package alu_pkg;
 	
+    import uvm_pkg::*;
+    `include "uvm_macros.svh"
+	
 	typedef enum bit[7:0] {
 		S_NO_ERROR = 8'b00000000,
 		S_MISSING_DATA = 8'b00000001,
