@@ -13,8 +13,9 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-class coverage;
-
+class coverage extends uvm_component;
+	`uvm_component_utils(coverage)
+	
     virtual alu_bfm bfm;
 
     protected byte unsigned A;
@@ -97,23 +98,32 @@ class coverage;
 	endgroup
 
 
-    function new (virtual alu_bfm b);
+    function new (string name, uvm_component parent);
+	    super.new(name, parent);
         zeros_or_ones_on_ops = new();
         irregular_ops 	     = new();
-        bfm                  = b;
     endfunction : new
+//------------------------------------------------------------------------------
+// build phase
+//------------------------------------------------------------------------------
+    function void build_phase(uvm_phase phase);
+        if(!uvm_config_db #(virtual alu_bfm)::get(null, "*","bfm", bfm))
+            $fatal(1,"Failed to get BFM");
+    endfunction : build_phase
 
-
-    task execute();
+//------------------------------------------------------------------------------
+// run phase
+//------------------------------------------------------------------------------
+    task run_phase(uvm_phase phase);
         forever begin : sampling_block
-            @(posedge bfm.enable_n);
+            @(negedge bfm.clk); //in execute i used @(posedge bfm.enable_n);
             A      = bfm.A;
             B      = bfm.B;
             op_set = bfm.op_set;
 			zeros_or_ones_on_ops.sample();
 			irregular_ops.sample();
         end : sampling_block
-    endtask : execute
+    endtask : run_phase
 
 endclass : coverage
 
