@@ -23,6 +23,7 @@ import alu_pkg::*;
 	bit                  din;
 	logic                dout;
 	bit                  dout_valid;
+	bit 				 done;
 
 
 	bit           [7:0] A, B;
@@ -32,7 +33,6 @@ import alu_pkg::*;
 	bit           [15:0] data_result;
 	wire          [7:0]  op;
 
-	test_progress_t      test_progress = TEST_IN_PROGRESS;
 	operation_t          op_set;
 
 	assign op = op_set;
@@ -121,7 +121,11 @@ import alu_pkg::*;
 		end
 		assert(calculate_parity(data_lsb_word) == data_lsb_word[0]);
 
-
+		@(negedge clk);
+		done = 1;
+		@(negedge clk);
+		done = 0;
+		
 		begin
 		`ifdef DEBUG
 			$display("Deserializer received:");
