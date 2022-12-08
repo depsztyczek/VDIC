@@ -19,7 +19,7 @@ class driver extends uvm_component;
 //------------------------------------------------------------------------------
 // local variables
 //------------------------------------------------------------------------------
-    protected virtual tinyalu_bfm bfm;
+    protected virtual alu_bfm bfm;
     uvm_get_port #(command_s) command_port;
     
 //------------------------------------------------------------------------------
