@@ -26,91 +26,87 @@ class coverage extends uvm_subscriber #(command_s);
 //------------------------------------------------------------------------------
 // covergroups
 //------------------------------------------------------------------------------
-    covergroup op_cov;
+ 	covergroup zeros_or_ones_on_ops;
 
-        option.name = "op_cov";
+		option.name = "cg_zeros_or_ones_on_ops";
 
-        coverpoint op_set {
-            bins single_cycle[] = {[add_op : xor_op], rst_op,no_op};
-            bins multi_cycle    = {mul_op};
+		valid_ops: coverpoint bfm.op {
+			bins add_op = {CMD_ADD};
+			bins and_op = {CMD_AND};
+			bins or_op = {CMD_OR};
+			bins xor_op = {CMD_XOR};
+			bins nop_op = {CMD_NOP};
+			bins sub_op = {CMD_SUB};
+		}
 
-            bins opn_rst[]      = ([add_op:mul_op] => rst_op);
-            bins rst_opn[]      = (rst_op => [add_op:mul_op]);
+		a_leg: coverpoint bfm.A {
+			bins zeros = {'h00};
+			bins others= {['h01:'hFE]};
+			bins ones  = {'hFF};
+		}
 
-            bins sngl_mul[]     = ([add_op:xor_op],no_op => mul_op);
-            bins mul_sngl[]     = (mul_op => [add_op:xor_op], no_op);
+		b_leg: coverpoint bfm.B {
+			bins zeros = {'h00};
+			bins others= {['h01:'hFE]};
+			bins ones  = {'hFF};
+		}
 
-            bins twoops[]       = ([add_op:mul_op] [* 2]);
-            bins manymult       = (mul_op [* 3:5]);
+		B_op_00_FF: cross a_leg, b_leg, valid_ops {
 
-            bins rstmulrst      = (rst_op => mul_op [* 2] => rst_op);
-            bins rstmulrstim    = (rst_op => mul_op [-> 2] => rst_op);
+			// Simulate all zero/ones input for all the valid operations.
 
-        }
+			bins B1_add_op_00          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B2_and_op_00          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B3_xor_op_00          = binsof (valid_ops) intersect {CMD_XOR} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B4_or_op_00          = binsof (valid_ops) intersect {CMD_OR} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B5_sub_op_00          = binsof (valid_ops) intersect {CMD_SUB} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+			bins B6_nop_op_00          = binsof (valid_ops) intersect {CMD_NOP} && (binsof (a_leg.zeros) || binsof (b_leg.zeros));
 
-    endgroup
 
-    covergroup zeros_or_ones_on_ops;
+			bins B7_add_op_FF          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+			bins B8_and_op_FF          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+			bins B9_xor_op_FF           = binsof (valid_ops) intersect {CMD_XOR} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+			bins B10_or_op_FF           = binsof (valid_ops) intersect {CMD_OR} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+			bins B11_sub_op_FF           = binsof (valid_ops) intersect {CMD_SUB} && (binsof (a_leg.ones) || binsof (b_leg.ones));
+			bins B12_nop_op_FF           = binsof (valid_ops) intersect {CMD_NOP} && (binsof (a_leg.ones) || binsof (b_leg.ones));
 
-        option.name = "zeros_or_ones_on_ops";
+			ignore_bins others_only = binsof(a_leg.others) && binsof(b_leg.others);
+		}
 
-        all_ops : coverpoint op_set {
-            ignore_bins null_ops = {rst_op, no_op};}
+		B_op_regular: cross a_leg, b_leg, valid_ops {
 
-        a_leg: coverpoint A {
-            bins zeros = {'h00};
-            bins others= {['h01:'hFE]};
-            bins ones  = {'hFF};
-        }
+			// Simulate regular input on operations
 
-        b_leg: coverpoint B {
-            bins zeros = {'h00};
-            bins others= {['h01:'hFE]};
-            bins ones  = {'hFF};
-        }
+			bins B1_add_op_regular          = binsof (valid_ops) intersect {CMD_ADD} && (binsof (a_leg.others) || binsof (b_leg.others));
+			bins B2_and_op_regular          = binsof (valid_ops) intersect {CMD_AND} && (binsof (a_leg.others) || binsof (b_leg.others));
+			bins B3_xor_op_regular          = binsof (valid_ops) intersect {CMD_XOR} && (binsof (a_leg.others) || binsof (b_leg.others));
+			bins B4_or_op_regular          = binsof (valid_ops) intersect {CMD_OR} && (binsof (a_leg.others) || binsof (b_leg.others));
+			bins B5_sub_op_regular          = binsof (valid_ops) intersect {CMD_SUB} && (binsof (a_leg.others) || binsof (b_leg.others));
+			bins B6_nop_op_regular          = binsof (valid_ops) intersect {CMD_NOP} && (binsof (a_leg.others) || binsof (b_leg.others));
 
-        op_00_FF: cross a_leg, b_leg, all_ops {
-            bins add_00             = binsof (all_ops) intersect {add_op} &&
-            (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+		}
 
-            bins add_FF             = binsof (all_ops) intersect {add_op} &&
-            (binsof (a_leg.ones) || binsof (b_leg.ones));
+	endgroup
 
-            bins and_00             = binsof (all_ops) intersect {and_op} &&
-            (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+// Covergroup checking for irregular operations.
+	covergroup irregular_ops;
 
-            bins and_FF             = binsof (all_ops) intersect {and_op} &&
-            (binsof (a_leg.ones) || binsof (b_leg.ones));
+		option.name = "cg_irregular_ops";
+		option.auto_bin_max = 10;
 
-            bins xor_00             = binsof (all_ops) intersect {xor_op} &&
-            (binsof (a_leg.zeros) || binsof (b_leg.zeros));
+		invalid_ops: coverpoint bfm.op {
+			ignore_bins valid_ops = {CMD_ADD,CMD_AND,CMD_NOP,CMD_XOR,CMD_OR,CMD_SUB};
+		}
 
-            bins xor_FF             = binsof (all_ops) intersect {xor_op} &&
-            (binsof (a_leg.ones) || binsof (b_leg.ones));
-
-            bins mul_00             = binsof (all_ops) intersect {mul_op} &&
-            (binsof (a_leg.zeros) || binsof (b_leg.zeros));
-
-            bins mul_FF             = binsof (all_ops) intersect {mul_op} &&
-            (binsof (a_leg.ones) || binsof (b_leg.ones));
-
-            bins mul_max            = binsof (all_ops) intersect {mul_op} &&
-            (binsof (a_leg.ones) && binsof (b_leg.ones));
-
-            ignore_bins others_only =
-            binsof(a_leg.others) && binsof(b_leg.others);
-
-        }
-
-    endgroup
+	endgroup
 
 //------------------------------------------------------------------------------
 // constructor
 //------------------------------------------------------------------------------
     function new (string name, uvm_component parent);
-        super.new(name, parent);
-        op_cov               = new();
+	    super.new(name, parent);
         zeros_or_ones_on_ops = new();
+        irregular_ops 	     = new();
     endfunction : new
 
 //------------------------------------------------------------------------------
