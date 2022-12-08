@@ -54,7 +54,7 @@ class scoreboard extends uvm_subscriber #(shortint);
 //------------------------------------------------------------------------------
 // function to calculate the expected ALU result
 //------------------------------------------------------------------------------
-	function logic [15:0] get_expected(
+	function logic [15:0] get_expected_data(
 			bit [7:0] A,
 			bit [7:0] B,
 			operation_t op_set
@@ -76,7 +76,7 @@ class scoreboard extends uvm_subscriber #(shortint);
 
 		return(ret);
 
-	endfunction : get_expected
+	endfunction : get_expected_data
 
 	function logic [7:0] get_expected_status(
 			operation_t op_set
@@ -101,6 +101,23 @@ class scoreboard extends uvm_subscriber #(shortint);
 		return(ret);
 
 	endfunction : get_expected_status
+	
+	function logic [23:0] get_expected_result(
+			bit [7:0] A,
+			bit [7:0] B,
+			operation_t op_set
+		);
+		bit [23:0] ret;
+		bit [7:0] status;
+		bit [15:0] data;
+		
+		status = get_expected_status(op_set);
+		data = get_expected_data(A, B, op_set);
+		ret = {status, data};
+		
+		return(ret);
+
+	endfunction : get_expected_result
 	
 	function void print_test_result (test_result_t r);
 		if(r == TEST_PASSED) begin
@@ -134,19 +151,19 @@ class scoreboard extends uvm_subscriber #(shortint);
 //------------------------------------------------------------------------------
     function void write(shortint t);
 	    
-		logic [15:0] predicted_result;
-		logic [7:0] predicted_status;
+		logic [23:0] predicted_result;
         command_s cmd;
 	    
         cmd.A            = 0;
         cmd.B            = 0;
-        cmd.op           = no_op;
+        cmd.op           = CMD_NOP;
+
         do
             if (!cmd_f.try_get(cmd))
                 $fatal(1, "Missing command in self checker");
-        while ((cmd.op == no_op) || (cmd.op == rst_op));
-        //deserialize here
-        predicted_result = get_expected(cmd.A, cmd.B, cmd.op);
+        while (cmd.op == CMD_NOP);
+        //deserialize here?
+        predicted_result = get_expected_result(cmd.A, cmd.B, cmd.op);
 
         SCOREBOARD_CHECK:
         //add to the assert result + status check
