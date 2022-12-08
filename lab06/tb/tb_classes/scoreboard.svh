@@ -30,28 +30,6 @@ class scoreboard extends uvm_subscriber #(shortint);
     endfunction : new
 
 //------------------------------------------------------------------------------
-// print the PASSED/FAILED in color
-//------------------------------------------------------------------------------
-    protected function void print_test_result (test_result r);
-        if(tr == TEST_PASSED) begin
-            set_print_color(COLOR_BOLD_BLACK_ON_GREEN);
-            $write ("-----------------------------------\n");
-            $write ("----------- Test PASSED -----------\n");
-            $write ("-----------------------------------");
-            set_print_color(COLOR_DEFAULT);
-            $write ("\n");
-        end
-        else begin
-            set_print_color(COLOR_BOLD_BLACK_ON_RED);
-            $write ("-----------------------------------\n");
-            $write ("----------- Test FAILED -----------\n");
-            $write ("-----------------------------------");
-            set_print_color(COLOR_DEFAULT);
-            $write ("\n");
-        end
-    endfunction
-
-//------------------------------------------------------------------------------
 // function to calculate the expected ALU result
 //------------------------------------------------------------------------------
 	function logic [15:0] get_expected_data(
@@ -119,7 +97,7 @@ class scoreboard extends uvm_subscriber #(shortint);
 
 	endfunction : get_expected_result
 	
-	function void print_test_result (test_result_t r);
+	protected function void print_test_result (test_result_t r);
 		if(r == TEST_PASSED) begin
 			set_print_color(COLOR_BOLD_BLACK_ON_GREEN);
 			$write ("-----------------------------------\n");

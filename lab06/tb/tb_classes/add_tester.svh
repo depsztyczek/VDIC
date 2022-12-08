@@ -20,7 +20,7 @@ class add_tester extends random_tester;
 // function: get_op - generate random opcode for the tester
 //------------------------------------------------------------------------------
    protected function operation_t get_op();
-      return add_op;
+      return CMD_ADD;
    endfunction : get_op
  
 //------------------------------------------------------------------------------

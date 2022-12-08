@@ -44,7 +44,7 @@ class command_monitor extends uvm_component;
 //------------------------------------------------------------------------------
     function void build_phase(uvm_phase phase);
 
-        if(!uvm_config_db #(virtual tinyalu_bfm)::get(null, "*","bfm", bfm))
+        if(!uvm_config_db #(virtual alu_bfm)::get(null, "*","bfm", bfm))
             $fatal(1, "Failed to get BFM");
 
         bfm.command_monitor_h = this;

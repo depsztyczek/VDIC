@@ -33,7 +33,7 @@ class driver extends uvm_component;
 // build phase
 //------------------------------------------------------------------------------
     function void build_phase(uvm_phase phase);
-        if(!uvm_config_db #(virtual tinyalu_bfm)::get(null, "*","bfm", bfm))
+        if(!uvm_config_db #(virtual alu_bfm)::get(null, "*","bfm", bfm))
             $fatal(1, "Failed to get BFM");
         command_port = new("command_port",this);
     endfunction : build_phase

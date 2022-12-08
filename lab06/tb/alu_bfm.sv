@@ -47,14 +47,6 @@ operation_t          op_set;
 assign op = op_set;
 assign data_result = {data_msb, data_lsb};
 assign result = {status, data_result};
-    
-  
-//------------------------------------------------------------------------------
-// local variables
-//------------------------------------------------------------------------------
-  
-operation_t op_set;
-assign op = op_set;
 
 command_monitor command_monitor_h;
 result_monitor result_monitor_h;
@@ -174,4 +166,4 @@ end
 
 
 
-endinterface : tinyalu_bfm
+endinterface : alu_bfm
