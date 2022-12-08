@@ -16,20 +16,18 @@
 module top;
 import uvm_pkg::*;
 `include "uvm_macros.svh"
-import tinyalu_pkg::*;
-`include "tinyalu_macros.svh"
+import alu_pkg::*;
 
-tinyalu_bfm bfm();
-tinyalu DUT (.A(bfm.A), .B(bfm.B), .op(bfm.op),
-    .clk(bfm.clk), .reset_n(bfm.reset_n),
-    .start(bfm.start), .done(bfm.done), .result(bfm.result));
-
+	
+alu_bfm bfm();
+vdic_dut_2022 DUT (.clk(bfm.clk), .rst_n(bfm.rst_n), .enable_n(bfm.enable_n), .din(bfm.din), .dout(bfm.dout), .dout_valid(bfm.dout_valid));
 
 initial begin
-    uvm_config_db #(virtual tinyalu_bfm)::set(null, "*", "bfm", bfm);
+    uvm_config_db #(virtual alu_bfm)::set(null, "*", "bfm", bfm);
     run_test();
 end
 
 endmodule : top
+
 
 
