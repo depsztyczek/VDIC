@@ -17,20 +17,10 @@ class scoreboard extends uvm_subscriber #(shortint);
     `uvm_component_utils(scoreboard)
 
 //------------------------------------------------------------------------------
-// local typedefs
-//------------------------------------------------------------------------------
-    typedef enum bit {
-        TEST_PASSED,
-        TEST_FAILED
-    } test_result;
-
-//------------------------------------------------------------------------------
 // local variables
 //------------------------------------------------------------------------------
-//    virtual tinyalu_bfm bfm;
     uvm_tlm_analysis_fifo #(command_s) cmd_f;
-
-    protected test_result tr = TEST_PASSED; // the result of the current test
+    protected test_result_t test_result = TEST_PASSED;
 
 //------------------------------------------------------------------------------
 // constructor
@@ -64,27 +54,72 @@ class scoreboard extends uvm_subscriber #(shortint);
 //------------------------------------------------------------------------------
 // function to calculate the expected ALU result
 //------------------------------------------------------------------------------
-    function shortint get_expected(
-            bit [7:0] A,
-            bit [7:0] B,
-            operation_t op_set
-        );
-        shortint ret;
-    `ifdef DEBUG
-        $display("%0t DEBUG: get_expected(%0d,%0d,%0d)",$time, A, B, op_set);
-    `endif
-        case(op_set)
-            and_op : ret = A & B;
-            add_op : ret = A + B;
-            mul_op : ret = A * B;
-            xor_op : ret = A ^ B;
-            default: begin
-                $error("%0t INTERNAL ERROR. get_expected: unexpected case argument: %s", $time, op_set);
-                return shortint'(-1);
-            end
-        endcase
-        return(ret);
-    endfunction
+	function logic [15:0] get_expected(
+			bit [7:0] A,
+			bit [7:0] B,
+			operation_t op_set
+		);
+
+		bit [15:0] ret;
+
+		case(op_set)
+			CMD_AND : ret    = A & B;
+			CMD_ADD : ret    = A + B;
+			CMD_XOR : ret    = A ^ B;
+			CMD_NOP : ret    = 16'h0000;
+			CMD_OR  : ret    = A | B;
+			CMD_SUB : ret    = A - B;
+			default: begin
+				ret = 16'h0000;
+			end
+		endcase
+
+		return(ret);
+
+	endfunction : get_expected
+
+	function logic [7:0] get_expected_status(
+			operation_t op_set
+		);
+
+		bit [7:0] ret;
+
+		case(op_set)
+			CMD_AND : ret    = S_NO_ERROR;
+			CMD_ADD : ret    = S_NO_ERROR;
+			CMD_XOR : ret    = S_NO_ERROR;
+			CMD_NOP : ret    = S_NO_ERROR;
+			CMD_OR  : ret    = S_NO_ERROR;
+			CMD_SUB : ret    = S_NO_ERROR;
+
+			default: begin
+				ret = S_INVALID_COMMAND;
+			end
+
+		endcase
+
+		return(ret);
+
+	endfunction : get_expected_status
+	
+	function void print_test_result (test_result_t r);
+		if(r == TEST_PASSED) begin
+			set_print_color(COLOR_BOLD_BLACK_ON_GREEN);
+			$write ("-----------------------------------\n");
+			$write ("----------- Test PASSED -----------\n");
+			$write ("-----------------------------------");
+			set_print_color(COLOR_DEFAULT);
+			$write ("\n");
+		end
+		else begin
+			set_print_color(COLOR_BOLD_BLACK_ON_RED);
+			$write ("-----------------------------------\n");
+			$write ("----------- Test FAILED -----------\n");
+			$write ("-----------------------------------");
+			set_print_color(COLOR_DEFAULT);
+			$write ("\n");
+		end
+	endfunction
 
 //------------------------------------------------------------------------------
 // build phase
@@ -98,8 +133,11 @@ class scoreboard extends uvm_subscriber #(shortint);
 // subscriber write function
 //------------------------------------------------------------------------------
     function void write(shortint t);
-        shortint predicted_result;
+	    
+		logic [15:0] predicted_result;
+		logic [7:0] predicted_status;
         command_s cmd;
+	    
         cmd.A            = 0;
         cmd.B            = 0;
         cmd.op           = no_op;
@@ -107,10 +145,11 @@ class scoreboard extends uvm_subscriber #(shortint);
             if (!cmd_f.try_get(cmd))
                 $fatal(1, "Missing command in self checker");
         while ((cmd.op == no_op) || (cmd.op == rst_op));
-
+        //deserialize here
         predicted_result = get_expected(cmd.A, cmd.B, cmd.op);
 
         SCOREBOARD_CHECK:
+        //add to the assert result + status check
         assert (predicted_result == t) begin
            `ifdef DEBUG
             $display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, cmd.A, cmd.B, cmd.op);
@@ -118,7 +157,7 @@ class scoreboard extends uvm_subscriber #(shortint);
         end
         else begin
             $error ("FAILED: A: %0h  B: %0h  op: %s result: %0h", cmd.A, cmd.B, cmd.op.name(), t);
-            tr = TEST_FAILED;
+            test_result = TEST_FAILED;
         end
     endfunction : write
 
@@ -127,7 +166,7 @@ class scoreboard extends uvm_subscriber #(shortint);
 //------------------------------------------------------------------------------
     function void report_phase(uvm_phase phase);
         super.report_phase(phase);
-        print_test_result(tr);
+        print_test_result(test_result);
     endfunction : report_phase
 
 endclass : scoreboard
