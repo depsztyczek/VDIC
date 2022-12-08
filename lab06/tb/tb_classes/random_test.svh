@@ -26,9 +26,13 @@ class random_test extends uvm_test;
         env_h = env::type_id::create("env_h",this);
     endfunction : build_phase
     
-    function void end_of_elaboration_phase(uvm_phase phase);
-        super.end_of_elaboration_phase(phase);
-        this.print(); // print test environment topology
-    endfunction : end_of_elaboration_phase
+//------------------------------------------------------------------------------
+// start-of-simulation-phase
+//------------------------------------------------------------------------------
+    virtual function void start_of_simulation_phase(uvm_phase phase);
+        super.start_of_simulation_phase(phase);
+        // Print the test topology
+        uvm_top.print_topology();
+    endfunction : start_of_simulation_phase
 
 endclass

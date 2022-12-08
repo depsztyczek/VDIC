@@ -19,34 +19,37 @@ class random_tester extends base_tester;
 //------------------------------------------------------------------------------
 // function: get_op - generate random opcode for the tester
 //------------------------------------------------------------------------------
-    virtual protected function operation_t get_op();
-        bit [2:0] op_choice;
-        op_choice = 3'($random);
-        case (op_choice)
-            3'b000 : return no_op;
-            3'b001 : return add_op;
-            3'b010 : return and_op;
-            3'b011 : return xor_op;
-            3'b100 : return mul_op;
-            3'b101 : return no_op;
-            3'b110 : return rst_op;
-            3'b111 : return rst_op;
-        endcase // case (op_choice)
-    endfunction : get_op
+	virtual protected function operation_t get_op();
+		bit [2:0] op_choice;
+		op_choice = 3'($random);
+		case (op_choice)
+			3'b000 : return CMD_NOP;
+			3'b001 : return CMD_AND;
+			3'b010 : return CMD_OR;
+			3'b011 : return CMD_XOR;
+			3'b100 : return CMD_ADD;
+			3'b101 : return CMD_SUB;
+			3'b110 : return 8'($random);
+			3'b111 : return 8'($random);
+		endcase // case (op_choice)
+	endfunction : get_op
 
 //------------------------------------------------------------------------------
 // function: get_data - generate random data for the tester
 //------------------------------------------------------------------------------
-    virtual protected function byte get_data();
-        bit [1:0] zero_ones;
-        zero_ones = 2'($random);
-        if (zero_ones == 2'b00)
-            return 8'h00;
-        else if (zero_ones == 2'b11)
-            return 8'hFF;
-        else
-            return byte'($random);
-    endfunction : get_data
+	virtual protected function byte get_data();
+
+		bit [1:0] data_choice;
+
+		data_choice = 2'($random);
+
+		if (data_choice == 2'b00)
+			return 8'h00;
+		else if (data_choice == 2'b11)
+			return 8'hFF;
+		else
+			return 8'($random);
+	endfunction : get_data
 
 //------------------------------------------------------------------------------
 // constructor
