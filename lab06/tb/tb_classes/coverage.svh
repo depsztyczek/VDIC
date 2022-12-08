@@ -30,7 +30,7 @@ class coverage extends uvm_subscriber #(command_s);
 
 		option.name = "cg_zeros_or_ones_on_ops";
 
-		valid_ops: coverpoint bfm.op {
+		valid_ops: coverpoint op_set {
 			bins add_op = {CMD_ADD};
 			bins and_op = {CMD_AND};
 			bins or_op = {CMD_OR};
@@ -39,13 +39,13 @@ class coverage extends uvm_subscriber #(command_s);
 			bins sub_op = {CMD_SUB};
 		}
 
-		a_leg: coverpoint bfm.A {
+		a_leg: coverpoint A {
 			bins zeros = {'h00};
 			bins others= {['h01:'hFE]};
 			bins ones  = {'hFF};
 		}
 
-		b_leg: coverpoint bfm.B {
+		b_leg: coverpoint B {
 			bins zeros = {'h00};
 			bins others= {['h01:'hFE]};
 			bins ones  = {'hFF};
@@ -94,7 +94,7 @@ class coverage extends uvm_subscriber #(command_s);
 		option.name = "cg_irregular_ops";
 		option.auto_bin_max = 10;
 
-		invalid_ops: coverpoint bfm.op {
+		invalid_ops: coverpoint op_set {
 			ignore_bins valid_ops = {CMD_ADD,CMD_AND,CMD_NOP,CMD_XOR,CMD_OR,CMD_SUB};
 		}
 
@@ -116,8 +116,8 @@ class coverage extends uvm_subscriber #(command_s);
         A      = t.A;
         B      = t.B;
         op_set = t.op;
-        op_cov.sample();
-        zeros_or_ones_on_ops.sample();
+		zeros_or_ones_on_ops.sample();
+		irregular_ops.sample();
     endfunction : write
 
 
