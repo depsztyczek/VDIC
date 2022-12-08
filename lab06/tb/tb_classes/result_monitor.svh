@@ -20,7 +20,7 @@ class result_monitor extends uvm_component;
 // local variables
 //------------------------------------------------------------------------------
     protected virtual alu_bfm bfm;
-    uvm_analysis_port #(shortint) ap;
+    uvm_analysis_port #(result_s) ap;
 
 //------------------------------------------------------------------------------
 // constructor
@@ -32,7 +32,7 @@ class result_monitor extends uvm_component;
 //------------------------------------------------------------------------------
 // monitoring function called from BFM
 //------------------------------------------------------------------------------
-    function void write_to_monitor(input [23:0] result);
+    function void write_to_monitor(result_s result);
         `ifdef DEBUG
         $display ("RESULT MONITOR: resultA: 0x%0h",result);
         `endif

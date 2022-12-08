@@ -39,10 +39,10 @@ bit           [7:0] status;
 bit           [7:0] data_msb;
 bit           [7:0] data_lsb;
 bit           [15:0] data_result;
-bit           [23:0] result;
 wire          [7:0]  op;
 
 operation_t          op_set;
+result_s             result;
 
 assign op = op_set;
 assign data_result = {data_msb, data_lsb};
@@ -87,6 +87,50 @@ task serializer(input bit [7:0] data, payload_type_t payload_bit);
 
 endtask
 
+task deserializer();
+
+	bit [9:0] status_word, data_msb_word, data_lsb_word;
+
+	assign status = status_word[8:1];
+	assign data_msb = data_msb_word[8:1];
+	assign data_lsb = data_lsb_word[8:1];
+
+	wait(dout_valid);
+
+	for (int i = 0 ; i < 10 ; i++)
+	begin
+		@(negedge clk);
+		status_word[9-i] = dout;
+	end
+	assert(calculate_parity(status_word) == status_word[0]);
+
+
+	for (int i = 0 ; i < 10 ; i++)
+	begin
+		@(negedge clk);
+		data_msb_word[9-i] = dout;
+	end
+	assert(calculate_parity(data_msb_word) == data_msb_word[0]);
+
+	for (int i = 0 ; i < 10 ; i++)
+	begin
+		@(negedge clk);
+		data_lsb_word[9-i] = dout;
+	end
+	assert(calculate_parity(data_lsb_word) == data_lsb_word[0]);
+	
+	begin
+	`ifdef DEBUG
+		$display("Deserializer received:");
+		$display("Status: %b", status_word);
+		$display("Data MSB: %b", data_msb_word);
+		$display("Data LSB: %b", data_lsb_word);
+		$display("Data is %h", data_result);
+	`endif
+	end
+
+endtask
+	
 function bit calculate_parity(bit [9:0] word);
 	automatic bit parity_bit = 0;
 	for (int i = 1 ; i < 10 ; i++)
@@ -99,7 +143,7 @@ function bit calculate_parity(bit [9:0] word);
 
 endfunction : calculate_parity
 	
-task send_op(input byte iA, input byte iB, input operation_t iop, shortint result);
+task send_op(input byte iA, input byte iB, input operation_t iop);
 
     op_set = iop;
     A      = iA;
@@ -110,6 +154,9 @@ task send_op(input byte iA, input byte iB, input operation_t iop, shortint resul
 	serializer(op_set,CONTROL);
 	@(negedge clk);
 	enable_n  = 1'b1;
+	done = 1;
+	@(negedge clk);
+	done = 0;
 
 endtask : send_op
 
@@ -148,6 +195,7 @@ initial begin : result_monitor_thread
     forever begin
         @(posedge clk) ;
         if (done)
+	        deserializer();
             result_monitor_h.write_to_monitor(result);
     end
 end : result_monitor_thread

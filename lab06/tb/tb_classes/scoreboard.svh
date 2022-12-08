@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-class scoreboard extends uvm_subscriber #(shortint);
+class scoreboard extends uvm_subscriber #(result_s);
     `uvm_component_utils(scoreboard)
 
 //------------------------------------------------------------------------------
@@ -127,9 +127,9 @@ class scoreboard extends uvm_subscriber #(shortint);
 //------------------------------------------------------------------------------
 // subscriber write function
 //------------------------------------------------------------------------------
-    function void write(shortint t);
+    function void write(result_s t);
 	    
-		logic [23:0] predicted_result;
+		result_s predicted_result;
         command_s cmd;
 	    
         cmd.A            = 0;
@@ -140,11 +140,9 @@ class scoreboard extends uvm_subscriber #(shortint);
             if (!cmd_f.try_get(cmd))
                 $fatal(1, "Missing command in self checker");
         while (cmd.op == CMD_NOP);
-        //deserialize here?
         predicted_result = get_expected_result(cmd.A, cmd.B, cmd.op);
 
         SCOREBOARD_CHECK:
-        //add to the assert result + status check
         assert (predicted_result == t) begin
            `ifdef DEBUG
             $display("%0t Test passed for A=%0d B=%0d op_set=%0d", $time, cmd.A, cmd.B, cmd.op);

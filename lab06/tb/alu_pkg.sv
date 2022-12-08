@@ -56,6 +56,10 @@ package alu_pkg;
         byte unsigned B;
         operation_t op;
     } command_s;
+	
+	typedef struct packed{
+		bit [23:0] result;
+	} result_s;
 
     // terminal print colors
     typedef enum {
