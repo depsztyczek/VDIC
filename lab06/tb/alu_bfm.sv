@@ -95,8 +95,6 @@ task deserializer();
 	assign data_msb = data_msb_word[8:1];
 	assign data_lsb = data_lsb_word[8:1];
 
-	wait(dout_valid);
-
 	for (int i = 0 ; i < 10 ; i++)
 	begin
 		@(negedge clk);
@@ -194,7 +192,7 @@ end : rst_monitor
 initial begin : result_monitor_thread
     forever begin
         @(posedge clk) ;
-        if (done)
+        wait (dout_valid);
 	        deserializer();
             result_monitor_h.write_to_monitor(result);
     end
