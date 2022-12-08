@@ -13,26 +13,40 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-import tinyalu_pkg::*;
+import alu_pkg::*;
 
 //------------------------------------------------------------------------------
 // the interface
 //------------------------------------------------------------------------------
 
-interface tinyalu_bfm;
+interface alu_bfm;
 
 //------------------------------------------------------------------------------
 // dut connections
 //------------------------------------------------------------------------------
 
-bit [7:0] A;
-bit [7:0] B;
-bit clk;
-bit reset_n;
-bit [2:0] op;
-bit start;
-wire done;
-wire [15:0] result;
+bit                  clk;
+bit                  rst_n;
+bit                  enable_n;
+bit                  din;
+logic                dout;
+bit                  dout_valid;
+bit 				 done;
+
+
+bit           [7:0] A, B;
+bit           [7:0] status;
+bit           [7:0] data_msb;
+bit           [7:0] data_lsb;
+bit           [15:0] data_result;
+bit           [23:0] result;
+wire          [7:0]  op;
+
+operation_t          op_set;
+
+assign op = op_set;
+assign data_result = {data_msb, data_lsb};
+assign result = {status, data_result};
     
   
 //------------------------------------------------------------------------------
@@ -50,54 +64,62 @@ result_monitor result_monitor_h;
 //------------------------------------------------------------------------------
 
 task reset_alu();
-    `ifdef DEBUG
-    $display("%0t DEBUG: reset_alu", $time);
-    `endif
-    start   = 1'b0;
-    reset_n = 1'b0;
-    @(negedge clk);
-    reset_n = 1'b1;
+`ifdef DEBUG
+	$display("%0t DEBUG: reset_alu", $time);
+`endif
+	enable_n = 1'b1;
+	rst_n = 1'b0;
+	@(negedge clk);
+	rst_n = 1'b1;
 endtask : reset_alu
 
 //------------------------------------------------------------------------------
 // send transaction to DUT
 //------------------------------------------------------------------------------
 
+task serializer(input bit [7:0] data, payload_type_t payload_bit);
+
+	bit [9:0] word;
+	static bit parity_bit = 0;
+
+	assign word = {payload_bit, data, parity_bit};
+
+	parity_bit = calculate_parity(word);
+
+	for (int i = 0 ; i < 10 ; i++)
+	begin
+		@(negedge clk);
+		din = word[9-i];
+		enable_n  = 1'b0;
+	end
+
+endtask
+
+function bit calculate_parity(bit [9:0] word);
+	automatic bit parity_bit = 0;
+	for (int i = 1 ; i < 10 ; i++)
+	begin
+		if (word[i] == 1)
+			parity_bit = !parity_bit;
+	end
+
+	return parity_bit;
+
+endfunction : calculate_parity
+	
 task send_op(input byte iA, input byte iB, input operation_t iop, shortint result);
 
     op_set = iop;
     A      = iA;
     B      = iB;
 
-    start  = 1'b1;
-    case (op_set)
-        rst_op: begin : case_rst_op
-            reset_alu();
-        end
-        no_op: begin : case_no_op
-            @(negedge clk);
-            start = 1'b0;
-        end
-        default: begin : case_default
-            while(!done) @(negedge clk);
-            start = 1'b0;
-            @(negedge clk);
-        end
-    endcase
+	serializer(A,DATA);
+	serializer(B,DATA);
+	serializer(op_set,CONTROL);
+	@(negedge clk);
+	enable_n  = 1'b1;
 
 endtask : send_op
-
-
-//------------------------------------------------------------------------------
-// convert binary op code to enum
-//------------------------------------------------------------------------------
-
-function operation_t op2enum();
-    operation_t opi;
-    if( ! $cast(opi,op) )
-        $fatal(1, "Illegal operation on op bus");
-    return opi;
-endfunction : op2enum
 
 //------------------------------------------------------------------------------
 // write command monitor
@@ -106,22 +128,21 @@ endfunction : op2enum
 always @(posedge clk) begin : op_monitor
     static bit in_command = 0;
     command_s command;
-    if (start) begin : start_high
+    if (!enable_n) begin : enable_n_low
         if (!in_command) begin : new_command
             command.A  = A;
             command.B  = B;
-            command.op = op2enum();
+            command.op = op_set;
             command_monitor_h.write_to_monitor(command);
-            in_command = (command.op != no_op);
         end : new_command
-    end : start_high
-    else // start low
+    end : enable_n_low
+    else // enable_n high
         in_command = 0;
 end : op_monitor
 
-always @(negedge reset_n) begin : rst_monitor
+always @(negedge rst_n) begin : rst_monitor
     command_s command;
-    command.op = rst_op;
+    command.op = CMD_NOP;
     if (command_monitor_h != null) //guard against VCS time 0 negedge
         command_monitor_h.write_to_monitor(command);
 end : rst_monitor
