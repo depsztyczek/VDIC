@@ -32,11 +32,11 @@ class result_monitor extends uvm_component;
 //------------------------------------------------------------------------------
 // monitoring function called from BFM
 //------------------------------------------------------------------------------
-    function void write_to_monitor(shortint r);
+    function void write_to_monitor(input [23:0] result);
         `ifdef DEBUG
-        $display ("RESULT MONITOR: resultA: 0x%0h",r);
+        $display ("RESULT MONITOR: resultA: 0x%0h",result);
         `endif
-        ap.write(r);
+        ap.write(result);
     endfunction : write_to_monitor
 
 //------------------------------------------------------------------------------
