@@ -37,31 +37,24 @@ class tester extends uvm_component;
 //------------------------------------------------------------------------------
 // run phase
 //------------------------------------------------------------------------------
-
     task run_phase(uvm_phase phase);
+
         command_transaction command;
 
         phase.raise_objection(this);
 
-        command    = new("command");
-        command.op = rst_op;
-        command_port.put(command);
-
-        command    = command_transaction::type_id::create("command");
-        repeat (1000) begin
-            assert(command.randomize());
+	    command    = command_transaction::type_id::create("command");
+        repeat (10000) begin : random_loop
+	        assert(command.randomize()); //instead of 3 lines below
+//            command.op = get_op();
+//            command.A  = get_data();
+//            command.B  = get_data();
             command_port.put(command);
-        end
-
-        command    = new("command");
-        command.op = mul_op;
-        command.A  = 8'hFF;
-        command.B  = 8'hFF;
-        command_port.put(command);
-
+        end : random_loop
         #500;
         phase.drop_objection(this);
     endtask : run_phase
+    
 
 
 endclass : tester
