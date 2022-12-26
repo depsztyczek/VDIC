@@ -80,14 +80,14 @@ class scoreboard extends uvm_subscriber #(result_transaction);
 
 	endfunction : get_expected_status
 	
-	function logic [23:0] get_expected_result(command_transaction cmd);
-		bit [23:0] ret;
+	function result_transaction get_expected_result(command_transaction cmd);
+		result_transaction ret;
 		bit [7:0] status;
 		bit [15:0] data;
 		
 		status = get_expected_status(cmd.op);
 		data = get_expected_data(cmd.A, cmd.B, cmd.op);
-		ret = {status, data};
+		ret.result = {status, data};
 		
 		return(ret);
 
@@ -137,15 +137,15 @@ class scoreboard extends uvm_subscriber #(result_transaction);
             if (!cmd_f.try_get(cmd))
                 $fatal(1, "Missing command in self checker");
         while (cmd.op == CMD_NOP);
-        predicted_result = get_expected_result(cmd.A, cmd.B, cmd.op);
+        predicted_result = get_expected_result(cmd);
 
         data_str  = { cmd.convert2string(),
             " ==>  Actual " , t.convert2string(),
-            "/Predicted ",predicted.convert2string()};
+            "/Predicted ",predicted_result.convert2string()};
 
-        if (!predicted.compare(t)) begin
+        if (!predicted_result.compare(t)) begin
             `uvm_error("SELF CHECKER", {"FAIL: ",data_str})
-            tr = TEST_FAILED;
+            test_result = TEST_FAILED;
         end
         else
             `uvm_info ("SELF CHECKER", {"PASS: ", data_str}, UVM_HIGH)

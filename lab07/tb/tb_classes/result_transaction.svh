@@ -19,7 +19,8 @@ class result_transaction extends uvm_transaction;
 // transaction variables
 //------------------------------------------------------------------------------
 
-    shortint result;
+    bit [23:0] result;
+
 
 //------------------------------------------------------------------------------
 // constructor

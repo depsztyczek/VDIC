@@ -167,6 +167,7 @@ always @(posedge clk) begin : op_monitor
     command_transaction command;
     if (!enable_n) begin : enable_n_low
         if (!in_command) begin : new_command
+	        command = new("command");
             command.A  = A;
             command.B  = B;
             command.op = op_set;
@@ -181,6 +182,7 @@ always @(negedge rst_n) begin : rst_monitor
     command_transaction command;
     command.op = CMD_NOP;
     if (command_monitor_h != null) //guard against VCS time 0 negedge
+    	command = new("command");
         command_monitor_h.write_to_monitor(command);
 end : rst_monitor
 

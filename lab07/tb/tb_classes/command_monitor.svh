@@ -46,14 +46,10 @@ class command_monitor extends uvm_component;
 // access function for BMF
 //------------------------------------------------------------------------------
 
-    function void write_to_monitor(byte A, byte B, operation_t op);
-        command_transaction cmd;
+    function void write_to_monitor(command_transaction cmd);
+
         `uvm_info("COMMAND MONITOR",$sformatf("MONITOR: A: %2h  B: %2h  op: %s",
-                A, B, op.name()), UVM_HIGH);
-        cmd    = new("cmd");
-        cmd.A  = A;
-        cmd.B  = B;
-        cmd.op = op;
+                cmd.A, cmd.B, cmd.op.name()), UVM_HIGH);
         ap.write(cmd);
     endfunction : write_to_monitor
     
