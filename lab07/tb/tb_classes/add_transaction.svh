@@ -20,7 +20,7 @@ class add_transaction extends command_transaction;
 // constraints
 //------------------------------------------------------------------------------
 
-    constraint add_only {op == add_op;}
+    constraint add_only {op == CMD_ADD;}
 
 //------------------------------------------------------------------------------
 // constructor
