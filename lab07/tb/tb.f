@@ -1,9 +1,9 @@
--F ../../rtl/rtl_example.f
-tinyalu_pkg.sv
-tinyalu_bfm.sv
+alu_pkg.sv
+alu_bfm.sv
+-F ../../rtl/rtl.f
 top.sv
++incdir+tb_classes
 +incdir+.
-+incdir+./tb_classes
 
 +nowarnDSEMEL
 +nowarnBADPRF
