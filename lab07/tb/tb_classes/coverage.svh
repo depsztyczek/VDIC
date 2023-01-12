@@ -83,6 +83,11 @@ class coverage extends uvm_subscriber #(command_transaction);
 			bins B4_or_op_regular          = binsof (valid_ops) intersect {CMD_OR} && (binsof (a_leg.others) || binsof (b_leg.others));
 			bins B5_sub_op_regular          = binsof (valid_ops) intersect {CMD_SUB} && (binsof (a_leg.others) || binsof (b_leg.others));
 			bins B6_nop_op_regular          = binsof (valid_ops) intersect {CMD_NOP} && (binsof (a_leg.others) || binsof (b_leg.others));
+			
+			ignore_bins zero_one_only = binsof(a_leg.zeros) && binsof(b_leg.ones);
+			ignore_bins one_zero_only = binsof(a_leg.ones) && binsof(b_leg.zeros);
+			ignore_bins one_one_only = binsof(a_leg.ones) && binsof(b_leg.ones);
+			ignore_bins zero_zero_only = binsof(a_leg.zeros) && binsof(b_leg.zeros);
 
 		}
 
